@@ -4,11 +4,15 @@ import com.example.core.config.DBParameters
 import com.example.core.config.loadConfigMampDB
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.transactions.transaction
 
 object DatabaseFactory {
     private lateinit var dataSource: HikariDataSource
     private val loadCfg: DBParameters = loadConfigMampDB()
+
 
     fun init(){
         val config = HikariConfig().apply{
@@ -31,4 +35,10 @@ object DatabaseFactory {
 
 }
 
-
+suspend fun <T> dbQuery(block : () -> T){
+    withContext(Dispatchers.IO) {
+        transaction {
+            block()
+        }
+    }
+}
