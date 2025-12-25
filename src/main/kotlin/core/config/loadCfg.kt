@@ -24,10 +24,21 @@ fun loadConfigDockerDB(): DBParameters{
         password = password,
         dbHost = "db",
         dbPort = getIntEnv("MYSQL_PORT")
-
-
     )
 
+}
+
+fun loadConfigAppDB(): DBParameters{
+    val database = getEnv("DB_NAME")
+    val user = getEnv("DB_USER")
+    val password = getEnv("DB_PASSWORD")
+    return DBParameters(
+        databaseName = database,
+        user = user,
+        password = password,
+        dbHost = getEnv("DB_HOST"),
+        dbPort = getIntEnv("DB_PORT")
+    )
 }
 
 

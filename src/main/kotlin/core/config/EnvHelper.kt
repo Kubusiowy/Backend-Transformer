@@ -6,5 +6,5 @@ fun getEnv(name:String):String{
 
 fun getIntEnv(name:String):Int{
     val env = getEnv(name)
-    return env.toIntOrNull() ?: error("Environment variable $name is missing")
+    return env.toIntOrNull() ?: error("Environment variable $name must be an integer, but was: $env")
 }
