@@ -14,7 +14,7 @@ fun Application.configureSecurity() {
     val jwtConfig = loadConfigJWT()
 
     authentication {
-        jwt {
+        jwt("auth-jwt") {
             realm = jwtConfig.jwtRealm
             verifier(
                 JWT
