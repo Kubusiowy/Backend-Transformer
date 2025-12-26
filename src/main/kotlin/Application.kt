@@ -10,6 +10,7 @@ import com.example.plugins.configureMonitoring
 import com.example.plugins.configureRouting
 import com.example.plugins.configureSecurity
 import com.example.plugins.configureSerialization
+import com.example.plugins.configureStatusPage
 import io.ktor.server.application.*
 import io.ktor.server.application.ApplicationStopping
 
@@ -26,5 +27,6 @@ fun Application.module() {
     configureMonitoring()
     configureSerialization()
     configureFrameworks()
+    configureStatusPage()
     configureRouting()
 }

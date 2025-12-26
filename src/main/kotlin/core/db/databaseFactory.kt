@@ -4,7 +4,7 @@ import com.example.core.config.DBParameters
 import com.example.core.config.loadConfigMampDB
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -36,7 +36,7 @@ object DatabaseFactory {
 }
 
 suspend fun <T> dbQuery(block : () -> T){
-    withContext(Dispatchers.IO) {
+    withContext(IO) {
         transaction {
             block()
         }
