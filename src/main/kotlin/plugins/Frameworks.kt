@@ -1,5 +1,7 @@
 package com.example.plugins
 
+import com.example.core.config.loadConfigJWT
+import com.example.plugins.Security.JwtServiceImpl
 import io.ktor.server.application.*
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
@@ -9,7 +11,9 @@ fun Application.configureFrameworks() {
     install(Koin) {
         slf4jLogger()
         modules(module {
-
+            single {
+                JwtServiceImpl(loadConfigJWT())
+            }
         })
     }
 }

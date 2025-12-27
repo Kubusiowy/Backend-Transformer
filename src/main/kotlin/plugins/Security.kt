@@ -10,11 +10,14 @@ import com.example.plugins.Security.JwtServiceImpl
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
+import org.koin.ktor.ext.inject
 import java.util.UUID
 
 
 
-fun Application.configureSecurity(jwtService: JwtServiceImpl) {
+fun Application.configureSecurity() {
+
+    val jwtService by inject<JwtServiceImpl>()
 
     val jwtConfig = loadConfigJWT()
 
