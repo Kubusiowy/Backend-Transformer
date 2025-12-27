@@ -2,7 +2,8 @@ package com.example.core.db.exposedTables
 
 import com.example.core.model.user.Role.Role
 import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.Table.timestamp
+import org.jetbrains.exposed.sql.javatime.timestamp
+
 
 object UsersTable : Table("Users") {
     val id = char("id", 36)

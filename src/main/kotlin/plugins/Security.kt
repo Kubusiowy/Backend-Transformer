@@ -3,11 +3,14 @@ package com.example.plugins
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.example.core.config.loadConfigJWT
+import com.example.core.model.user.Role.Role
+import com.example.core.model.user.UserPrincipal
 import com.example.plugins.Security.JwtService
 import com.example.plugins.Security.JwtServiceImpl
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
+import java.util.UUID
 
 
 
@@ -22,10 +25,18 @@ fun Application.configureSecurity(jwtService: JwtServiceImpl) {
             verifier(jwtService.verifier())
 
             validate { credential ->
-                if(credential.)
+                val subjectValue = credential.payload.subject
+                if (subjectValue.isNullOrBlank()) return@validate null
+                val subject = runCatching { UUID.fromString(subjectValue)}.getOrNull() ?: return@validate null
+
+                val roleValue = credential.payload.getClaim("role")?.asString()
+                if (roleValue.isNullOrBlank()) return@validate null
+                val role = runCatching { Role.valueOf(roleValue) }.getOrNull()
+                    ?: return@validate null
+
+                UserPrincipal(subject, role)
             }
         }
     }
 }
-
 

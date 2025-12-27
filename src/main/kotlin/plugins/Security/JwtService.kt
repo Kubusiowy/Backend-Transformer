@@ -1,8 +1,10 @@
 package com.example.plugins.Security
 
 import com.example.core.model.user.Role.Role
+import java.util.UUID
+
 
 interface JwtService {
-    fun generateToken(userId: String, tenantId: String, role: String): String
-    fun generateRefreshToken(userId: String, tenantId: String): String
+    fun generateToken(userId: UUID, tenantId: UUID, role: Role): String
+    fun generateRefreshToken(userId: UUID, tenantId: UUID): String
 }
