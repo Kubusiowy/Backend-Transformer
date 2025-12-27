@@ -30,7 +30,7 @@ class JwtServiceImpl(
         TODO("Not yet implemented")
     }
 
-    fun verifier(): JWTVerifier = JWT.require(algorithm)
+    override fun verifier(): JWTVerifier = JWT.require(algorithm)
         .withIssuer(cfg.jwtIssuer)
         .withAudience(cfg.jwtAudience)
         .build()
