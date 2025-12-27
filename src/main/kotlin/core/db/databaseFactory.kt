@@ -35,10 +35,9 @@ object DatabaseFactory {
 
 }
 
-suspend fun <T> dbQuery(block : () -> T){
+suspend fun <T> dbQuery(block : () -> T): T =
     withContext(IO) {
         transaction {
             block()
         }
     }
-}
