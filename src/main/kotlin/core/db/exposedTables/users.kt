@@ -9,6 +9,8 @@ object UsersTable : Table("Users") {
     val id = char("id", 36)
     val tenantId = char("tenant_id", 36).references(TenantsTable.id)
     val email = varchar("email", 255)
+    val name = varchar("name", 100)
+    val surname = varchar("surname", 100)
     val passwordHash = varchar("password_hash", 255)
     val role = enumerationByName("role", 10, Role::class).default(Role.USER)
     val isActive = bool("is_active").default(true)

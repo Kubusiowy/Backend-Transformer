@@ -2,7 +2,7 @@ package com.example.util
 
 import org.mindrot.jbcrypt.BCrypt
 
-object passwordHasher {
+object PasswordHasher {
 
     fun hash(password: String): String {
         return BCrypt.hashpw(password, BCrypt.gensalt(12))

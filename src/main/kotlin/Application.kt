@@ -21,12 +21,11 @@ fun main(args: Array<String>) {
 fun Application.module() {
 
     DatabaseFactory.init()
-
+    configureFrameworks()
     configureHTTP()
     configureSecurity()
     configureMonitoring()
     configureSerialization()
-    configureFrameworks()
     configureStatusPage()
     configureRouting()
 }
