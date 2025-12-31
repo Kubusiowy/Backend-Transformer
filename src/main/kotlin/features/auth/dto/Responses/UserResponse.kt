@@ -10,6 +10,8 @@ data class UserResponse (
     @Serializable(with = UUIDSerializer::class)
     val id: UUID,
     val email: String,
+    val name: String,
+    val surname: String,
     @Serializable(with = UUIDSerializer::class)
     val tenantId: UUID,
     val role: Role,

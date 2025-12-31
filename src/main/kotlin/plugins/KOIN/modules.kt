@@ -20,7 +20,7 @@ val loadCfgModule = module{
 }
 
 val securityModule = module {
-    single<JwtService>{JwtServiceImpl(get(named("jwt")))}  // do zmiany pozniej
+    single<JwtService>{JwtServiceImpl(get(named("jwt")))}
 
 }
 
