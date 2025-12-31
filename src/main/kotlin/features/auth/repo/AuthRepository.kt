@@ -17,18 +17,18 @@ class AuthRepository {
 
     suspend fun registerUser(input: RegisterInput): RegisterResult = dbQuery {
 
-            val tenantId = UUID.randomUUID().toString()
-            val userId = UUID.randomUUID().toString()
+            val tenantId = UUID.randomUUID()
+            val userId = UUID.randomUUID()
 
             TenantsTable.insert {
-                it[id] = tenantId
+                it[id] = tenantId.toString()
                 it[name] = "${input.name} ${input.surname}"
                 it[createdAt] = Instant.now()
             }
 
             UsersTable.insert {
-                it[id] = userId
-                it[this.tenantId] = tenantId
+                it[id] = userId.toString()
+                it[this.tenantId] = tenantId.toString()
                 it[email] = input.email
                 it[name] = input.name
                 it[surname] = input.surname
@@ -38,7 +38,7 @@ class AuthRepository {
                 it[createdAt] = Instant.now()
             }
 
-            RegisterResult(tenantId, userId)
+            RegisterResult(tenantId, userId,Role.USER)
 
     }
 
