@@ -27,6 +27,6 @@ val securityModule = module {
 val authModule = module {
     single { AuthRepository() }
 
-    single { RegisterService(get(),get()) }
+    single { RegisterService(get()) }
 
 }
