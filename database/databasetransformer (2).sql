@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:8889
--- Czas generowania: 30 Gru 2025, 23:49
+-- Czas generowania: 02 Sty 2026, 00:25
 -- Wersja serwera: 5.7.24
 -- Wersja PHP: 8.3.1
 
@@ -93,6 +93,13 @@ CREATE TABLE `tenants` (
   `name` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Zrzut danych tabeli `tenants`
+--
+
+INSERT INTO `tenants` (`id`, `name`, `created_at`) VALUES
+('00001101-0000-1000-8000-00805f9b34fb', 'TenantTestowy', '2026-01-02 00:25:02');
 
 -- --------------------------------------------------------
 

@@ -1,4 +1,4 @@
-package com.example.core.model.user
+package com.example.core.model.user.jwt
 
 import com.example.core.model.user.Role.Role
 import io.ktor.server.auth.Principal

@@ -4,7 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.example.core.config.loadConfigJWT
 import com.example.core.model.user.Role.Role
-import com.example.core.model.user.UserPrincipal
+import com.example.core.model.user.jwt.UserPrincipal
 import com.example.plugins.Security.JwtService
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
