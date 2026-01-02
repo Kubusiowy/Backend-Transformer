@@ -21,7 +21,7 @@ fun Route.registerRoutes() {
 
         val userId = registerService.register(input = input)
 
-        call.respond(HttpStatusCode.Created, userId.toString())
+        call.respond(HttpStatusCode.Created, userId)
 
     }
 }

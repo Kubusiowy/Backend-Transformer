@@ -1,14 +1,15 @@
 package com.example.features.auth.common.data
 
 import com.example.core.db.dbQuery
-import com.example.core.db.exposedTables.TenantsTable
 import com.example.core.db.exposedTables.UsersTable
-import com.example.core.model.user.User
-import com.example.core.util.PasswordHasher
-import com.example.features.auth.register.domain.RegisterInput
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.insert
 import java.time.Instant
 import java.util.UUID
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.select
+
+
 
 class AuthRepository {
 
@@ -32,9 +33,6 @@ class AuthRepository {
         id
     }
 
-    suspend fun findUser(id: UUID): User? {
-
-    }
 
 
 
