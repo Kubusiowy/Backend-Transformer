@@ -11,28 +11,27 @@ import java.util.UUID
 
 class AuthRepository {
 
-    suspend fun createNewUser(input: RegisterInput): UUID = dbQuery {
-        val userId = UUID.randomUUID()
-        val tenantId = UUID.randomUUID()
-        val now = Instant.now()
+    suspend fun createNewUser(id: UUID, tenantID: UUID,
+                              email: String, name: String,
+                              surname:String, hashPass:String,
+                              createdAt:Instant
+    ): UUID = dbQuery {
 
-        TenantsTable.insert {
-            it[id] = tenantId.toString()
-            it[name] = input.email
-            it[createdAt] = now
-        }
 
         UsersTable.insert {
-            it[UsersTable.id] = userId.toString()
-            it[UsersTable.tenantId] = tenantId.toString()
-            it[UsersTable.email] = input.email
-            it[UsersTable.name] = input.username
-            it[UsersTable.surname] = input.surname
-            it[UsersTable.passwordHash] = PasswordHasher.hash(input.rawPassword)
-            it[UsersTable.createdAt] = now
+            it[UsersTable.id] = id.toString()
+            it[UsersTable.tenantId] = tenantID.toString()
+            it[UsersTable.email] = email
+            it[UsersTable.name] = name
+            it[UsersTable.surname] = surname
+            it[UsersTable.passwordHash] = hashPass
+            it[UsersTable.createdAt] = createdAt
         }
 
-        userId
+        id
     }
+
+
+
 
 }
