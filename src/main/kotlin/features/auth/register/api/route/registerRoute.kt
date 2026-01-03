@@ -1,6 +1,7 @@
 package com.example.features.auth.register.api.route
 
 import com.example.features.auth.register.api.dto.RegisterRequest
+import com.example.features.auth.register.domain.RegisterResult
 import com.example.features.auth.register.domain.RegisterService
 import com.example.features.auth.register.domain.mapper.toInput
 import io.ktor.http.HttpStatusCode
@@ -19,9 +20,15 @@ fun Route.registerRoutes() {
 
         val input = req.toInput()
 
-        val userId = registerService.register(input = input)
+       when(val result = registerService.register(input)){
+           is RegisterResult.Success -> {
+               call.respond(HttpStatusCode.Created, result)
+           }
 
-        call.respond(HttpStatusCode.Created, userId)
+           is RegisterResult.Failure -> {
+               call.respond(HttpStatusCode.BadRequest, result)
+           }
+       }
 
     }
 }

@@ -8,7 +8,7 @@ import org.jetbrains.exposed.sql.javatime.timestamp
 object UsersTable : Table("Users") {
     val id = char("id", 36)
     val tenantId = char("tenant_id", 36).references(TenantsTable.id)
-    val email = varchar("email", 255)
+    val email = varchar("email", 255).uniqueIndex()
     val name = varchar("name", 100)
     val surname = varchar("surname", 100)
     val passwordHash = varchar("password_hash", 255)

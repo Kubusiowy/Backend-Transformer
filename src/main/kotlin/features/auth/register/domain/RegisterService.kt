@@ -2,7 +2,7 @@ package com.example.features.auth.register.domain
 
 import com.example.core.config.TenantDefaults
 import com.example.core.util.PasswordHasher
-import com.example.features.auth.common.data.AuthRepository
+import com.example.features.auth.common.AuthRepository
 import java.time.Instant
 import java.util.UUID
 

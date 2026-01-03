@@ -1,14 +1,12 @@
-package com.example.features.auth.common.data
+package com.example.features.auth.common
 
 import com.example.core.db.dbQuery
 import com.example.core.db.exposedTables.UsersTable
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.insert
 import java.time.Instant
 import java.util.UUID
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
 
+import org.jetbrains.exposed.sql.selectAll
 
 
 class AuthRepository {
@@ -32,6 +30,13 @@ class AuthRepository {
 
         id
     }
+
+    suspend fun existsByEmail(email:String): Boolean =
+        UsersTable
+            .selectAll()
+            .where {UsersTable.email eq email}
+            .limit(1)
+            .any()
 
 
 
