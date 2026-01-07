@@ -31,12 +31,13 @@ class AuthRepository {
         id
     }
 
-    suspend fun existsByEmail(email:String): Boolean =
+    suspend fun existsByEmail(email:String): Boolean = dbQuery {
         UsersTable
             .selectAll()
-            .where {UsersTable.email eq email}
+            .where { UsersTable.email eq email }
             .limit(1)
             .any()
+    }
 
 
 

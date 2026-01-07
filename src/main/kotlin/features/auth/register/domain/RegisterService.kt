@@ -17,6 +17,9 @@ class RegisterService(
         if(input.surname.isBlank()) return RegisterResult.Failure("surname is blank")
         if(input.rawPassword.isBlank() || input.rawPassword.length < 8) return RegisterResult.Failure("raw password is blank or too short")
 
+        val ifEmailExists = repo.existsByEmail(input.email)
+        if(ifEmailExists) return RegisterResult.Failure("email already exists")
+
         val userId = UUID.randomUUID()
         val tenantId = TenantDefaults.DEFAULT_TENANT_ID
         val now = Instant.now()
