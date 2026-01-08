@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.1.2
+-- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:8889
--- Czas generowania: 02 Sty 2026, 00:25
--- Wersja serwera: 5.7.24
--- Wersja PHP: 8.3.1
+-- Generation Time: Sty 08, 2026 at 12:29 PM
+-- Wersja serwera: 8.0.44
+-- Wersja PHP: 8.3.28
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Baza danych: `databasetransformer`
+-- Baza danych: `databaseTransformer`
 --
 
 -- --------------------------------------------------------
@@ -28,11 +28,11 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `clients` (
-  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `tenant_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `transformer_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `api_key_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tenant_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `transformer_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `api_key_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `last_seen` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -45,11 +45,11 @@ CREATE TABLE `clients` (
 --
 
 CREATE TABLE `devices` (
-  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `transformer_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `device_model` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `modbus_unit_id` int(11) DEFAULT NULL,
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `transformer_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `device_model` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `modbus_unit_id` int DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -61,10 +61,10 @@ CREATE TABLE `devices` (
 --
 
 CREATE TABLE `device_latest_measurements` (
-  `device_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `metric_key` varchar(80) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `device_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `metric_key` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `value` decimal(16,6) NOT NULL,
-  `unit` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `unit` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `taken_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -75,10 +75,25 @@ CREATE TABLE `device_latest_measurements` (
 --
 
 CREATE TABLE `pairing_codes` (
-  `code` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `transformer_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `transformer_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `expires_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `used_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struktura tabeli dla tabeli `refresh_tokens`
+--
+
+CREATE TABLE `refresh_tokens` (
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token_hash` char(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expires_at` timestamp NOT NULL,
+  `revoked_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -89,8 +104,8 @@ CREATE TABLE `pairing_codes` (
 --
 
 CREATE TABLE `tenants` (
-  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -108,10 +123,10 @@ INSERT INTO `tenants` (`id`, `name`, `created_at`) VALUES
 --
 
 CREATE TABLE `transformers` (
-  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `tenant_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `location` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tenant_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `location` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -123,16 +138,24 @@ CREATE TABLE `transformers` (
 --
 
 CREATE TABLE `users` (
-  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `tenant_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `surname` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `password_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `role` enum('ADMIN','USER') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'USER',
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tenant_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `surname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `role` enum('ADMIN','USER') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'USER',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Zrzut danych tabeli `users`
+--
+
+INSERT INTO `users` (`id`, `tenant_id`, `email`, `name`, `surname`, `password_hash`, `role`, `is_active`, `created_at`) VALUES
+('8e3b38d6-3ee9-4068-8fd6-ea5b48422f4d', '00001101-0000-1000-8000-00805f9b34fb', 'kuba@gmawddwail.cpm', 'Jan ddwadwwa', 'Kowaldwasfeskdwai', '$2a$12$wFec5jW/vnzhWuTgnhZ49.b.SGgrg.dRW/rQnmGyQpVOICYy7eqja', 'USER', 1, '2026-01-08 12:00:19'),
+('a6b76ef2-8b09-4cbf-8ebd-84f620f1da73', '00001101-0000-1000-8000-00805f9b34fb', 'kuba@gmail.cpm', 'Jan', 'Kowalski', '$2a$12$GJPEx8kIV/.yBM.J8aZjk.z5O2qAgXBkZhxUEKhYHUMz.mBnwAWa.', 'USER', 1, '2026-01-07 07:30:33');
 
 --
 -- Indeksy dla zrzutów tabel
@@ -171,6 +194,15 @@ ALTER TABLE `pairing_codes`
   ADD KEY `idx_pairing_expires` (`expires_at`);
 
 --
+-- Indeksy dla tabeli `refresh_tokens`
+--
+ALTER TABLE `refresh_tokens`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_refresh_token_hash` (`token_hash`),
+  ADD KEY `idx_refresh_user` (`user_id`),
+  ADD KEY `idx_refresh_expires` (`expires_at`);
+
+--
 -- Indeksy dla tabeli `tenants`
 --
 ALTER TABLE `tenants`
@@ -191,6 +223,16 @@ ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uq_users_tenant_email` (`tenant_id`,`email`),
   ADD KEY `idx_users_tenant` (`tenant_id`);
+
+--
+-- AUTO_INCREMENT dla zrzuconych tabel
+--
+
+--
+-- AUTO_INCREMENT dla tabeli `refresh_tokens`
+--
+ALTER TABLE `refresh_tokens`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- Ograniczenia dla zrzutów tabel
@@ -220,6 +262,12 @@ ALTER TABLE `device_latest_measurements`
 --
 ALTER TABLE `pairing_codes`
   ADD CONSTRAINT `fk_pairing_transformer` FOREIGN KEY (`transformer_id`) REFERENCES `transformers` (`id`) ON DELETE CASCADE;
+
+--
+-- Ograniczenia dla tabeli `refresh_tokens`
+--
+ALTER TABLE `refresh_tokens`
+  ADD CONSTRAINT `fk_refresh_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ograniczenia dla tabeli `transformers`
