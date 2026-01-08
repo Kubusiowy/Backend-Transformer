@@ -9,9 +9,11 @@ body {
 }
 
 .card {
-    background: #350202;
     padding: 40px;
     border-radius: 12px;
-    box-shadow: 0 0 50px rgba(197, 0, 0, 0.47);
     text-align: center;
+}
+
+h1{
+    text-shadow: 1px 1px 10px azure;
 }

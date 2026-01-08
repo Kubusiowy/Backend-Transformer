@@ -27,7 +27,14 @@ class JwtServiceImpl(
     }
 
     override fun generateRefreshToken(userId: UUID, tenantId: UUID): String {
-        TODO("Not yet implemented")
+        return JWT.create()
+            .withIssuer(cfg.jwtIssuer)
+            .withAudience(cfg.jwtAudience)
+            .withSubject(userId.toString())
+            .withClaim("tenant_id", tenantId.toString())
+            .withIssuedAt(Date(System.currentTimeMillis()))
+            .withExpiresAt(Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)) // 30 days
+            .sign(algorithm)
     }
 
     override fun verifier(): JWTVerifier = JWT.require(algorithm)

@@ -2,6 +2,7 @@ package com.example.features.auth.common
 
 import com.example.core.db.dbQuery
 import com.example.core.db.exposedTables.UsersTable
+import com.example.core.model.user.AuthLoginUser
 import org.jetbrains.exposed.sql.insert
 import java.time.Instant
 import java.util.UUID
@@ -37,6 +38,24 @@ class AuthRepository {
             .where { UsersTable.email eq email }
             .limit(1)
             .any()
+    }
+
+    suspend fun findAuthUserByEmail(email:String): AuthLoginUser? = dbQuery {
+        UsersTable
+            .selectAll()
+            .where{ UsersTable.email eq email }
+            .limit(1)
+            .map {
+                AuthLoginUser(
+                    id = UUID.fromString(it[UsersTable.id]),
+                    tenantId = UUID.fromString(it[UsersTable.tenantId]),
+                    email = it[UsersTable.email],
+                    hashPassword = it[UsersTable.passwordHash],
+                    role = it[UsersTable.role],
+                    isActive = it[UsersTable.isActive]
+                )
+            }
+            .singleOrNull()
     }
 
 
