@@ -1,18 +1,17 @@
 package com.example.core.db
 
-import com.example.core.config.DBParameters
-import com.example.core.config.loadConfigMampDB
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.koin.core.component.KoinComponent
 
-object DatabaseFactory {
+
+object DatabaseFactory: KoinComponent {
     private lateinit var dataSource: HikariDataSource
-    private val loadCfg: DBParameters = loadConfigMampDB()
+    private val loadCfg
 
 
     fun init(){
