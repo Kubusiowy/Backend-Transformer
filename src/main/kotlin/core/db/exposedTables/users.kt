@@ -12,3 +12,4 @@ object Users : Table("users") {
     val createdAt = timestamp("created_at")
     override val primaryKey = PrimaryKey(id)
 }
+
