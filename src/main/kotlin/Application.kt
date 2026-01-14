@@ -17,8 +17,9 @@ fun main(args: Array<String>) {
 
 fun Application.module() {
 
-    DatabaseFactory.init()
+
     configureFrameworks()
+    DatabaseFactory.init()
     configureHTTP()
     configureSecurity()
     configureMonitoring()

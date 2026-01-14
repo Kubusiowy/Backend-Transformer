@@ -4,7 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import com.example.core.config.JwtConfig
-import com.example.core.model.user.Role.Role
+import com.example.core.model.user.Role.UserRole
 import java.util.Date
 import java.util.UUID
 
@@ -14,7 +14,7 @@ class JwtServiceImpl(
 
     val algorithm = Algorithm.HMAC256(cfg.jwtSecret)
 
-    override fun generateToken(userId: UUID, tenantId: UUID, role: Role): String{
+    override fun generateToken(userId: UUID, tenantId: UUID, role: UserRole): String{
         return JWT.create()
             .withIssuer(cfg.jwtIssuer)
             .withAudience(cfg.jwtAudience)

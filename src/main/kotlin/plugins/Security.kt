@@ -3,7 +3,7 @@
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.example.core.config.loadConfigJWT
-import com.example.core.model.user.Role.Role
+import com.example.core.model.user.Role.UserRole
 import com.example.core.model.user.jwt.UserPrincipal
 import com.example.plugins.Security.JwtService
 import io.ktor.server.application.*
@@ -33,7 +33,7 @@ fun Application.configureSecurity() {
 
                 val roleValue = credential.payload.getClaim("role")?.asString()
                 if (roleValue.isNullOrBlank()) return@validate null
-                val role = runCatching { Role.valueOf(roleValue) }.getOrNull()
+                val role = runCatching { UserRole.valueOf(roleValue) }.getOrNull()
                     ?: return@validate null
 
                 UserPrincipal(subject, role)
