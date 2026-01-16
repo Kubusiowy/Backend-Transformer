@@ -5,6 +5,8 @@ import com.example.core.config.loadConfigAppDB
 import com.example.core.config.loadConfigDockerDB
 import com.example.core.config.loadConfigJWT
 import com.example.core.config.loadConfigMampDB
+import com.example.core.util.passHash.PasswordHasher
+import com.example.core.util.passHash.PasswordHasherIMPL
 import com.example.features.auth.common.AuthRepository
 import com.example.features.auth.register.domain.RegisterService
 import com.example.plugins.Security.JwtService
@@ -23,5 +25,6 @@ val JwtModule = module {
 
 val AuthModule = module {
     single { AuthRepository() }
-    single { RegisterService(get()) }
+    single<PasswordHasher> { PasswordHasherIMPL }
+    single { RegisterService(get(), get()) }
 }

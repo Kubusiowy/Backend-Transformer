@@ -1,6 +1,6 @@
 package com.example.features.auth.register.domain
 
-import com.example.core.util.PasswordHasher
+import com.example.core.util.passHash.PasswordHasher
 import com.example.features.auth.common.AuthRepository
 import com.example.features.auth.register.domain.DTO.request.UserRequest
 import com.example.features.auth.register.domain.DTO.request.toUserModel
@@ -10,6 +10,7 @@ import java.util.UUID
 
 class RegisterService(
     private val authRepository: AuthRepository,
+    private val passwordHasher: PasswordHasher,
 ) {
 
     suspend fun register(req: UserRequest): UUID {
@@ -23,7 +24,7 @@ class RegisterService(
         if(authRepository.existsByEmail(normalizedEmail)) throw Conflict("User already exists")
 
         val id = UUID.randomUUID()
-        val passwordHash = PasswordHasher.hash(req.rawPassword)
+        val passwordHash = passwordHasher.hashPassword(normalizedEmail)
 
         val user = req.toUserModel(id,passwordHash)
 
