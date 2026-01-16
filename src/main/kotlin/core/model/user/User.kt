@@ -7,5 +7,5 @@ data class User(
     val id: UUID,
     val email:String,
     val passwordHash:String,
-    val role: UserRole = UserRole.USER,
+    val role: UserRole
 )

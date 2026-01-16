@@ -15,8 +15,3 @@ data class UserResponse(
     val role: UserRole,
 )
 
-fun User.toResponse(): UserResponse = UserResponse(
-    id = this.id,
-    email = this.email,
-    role = this.role,
-)

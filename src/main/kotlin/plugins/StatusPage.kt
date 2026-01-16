@@ -1,6 +1,6 @@
 package com.example.plugins
 
-import com.example.plugins.errors.ErrorResponse
+import com.example.plugins.StatusPage.errors.ErrorResponse
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.install

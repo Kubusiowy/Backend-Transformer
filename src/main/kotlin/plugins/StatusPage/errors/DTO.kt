@@ -1,4 +1,4 @@
-package com.example.plugins.errors
+package com.example.plugins.StatusPage.errors
 
 import kotlinx.serialization.Serializable
 
@@ -9,3 +9,4 @@ data class ErrorResponse(
     val code: Int,
     val path: String,
 )
+
