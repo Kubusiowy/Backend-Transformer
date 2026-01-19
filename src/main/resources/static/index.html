@@ -2,12 +2,73 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Server Status WCS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Logowanie i rejestracja - Backend Transformer</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="card">
-    <h1>201 -> OK</h1>
-</div>
+    <main class="page">
+        <section class="hero">
+            <div class="hero__badge">Secure Access</div>
+            <h1>Backend Transformer</h1>
+            <p class="hero__lead">
+                Zaloguj sie lub zaloz konto, aby zarzadzac transformatorami, metrykami i integracjami.
+            </p>
+            <div class="hero__stats">
+                <div>
+                    <span class="stat__value">99.98%</span>
+                    <span class="stat__label">Uptime</span>
+                </div>
+                <div>
+                    <span class="stat__value">15 min</span>
+                    <span class="stat__label">Token TTL</span>
+                </div>
+                <div>
+                    <span class="stat__value">JWT</span>
+                    <span class="stat__label">Autoryzacja</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card__header">
+                <span class="card__eyebrow">Panel uzytkownika</span>
+                <h2 id="formTitle">Zaloguj sie</h2>
+                <p id="formSubtitle">Wprowadz dane, aby otrzymac token dostepu.</p>
+            </div>
+
+            <div class="switch" role="tablist" aria-label="Tryb formularza">
+                <button class="switch__btn" type="button" data-mode="login" aria-pressed="true">Logowanie</button>
+                <button class="switch__btn" type="button" data-mode="register" aria-pressed="false">Rejestracja</button>
+                <span class="switch__pill" aria-hidden="true"></span>
+            </div>
+
+            <form id="authForm" class="form" novalidate>
+                <label class="field">
+                    <span>Email</span>
+                    <input type="email" name="email" placeholder="uzytkownik@firma.pl" required>
+                </label>
+
+                <label class="field">
+                    <span>Haslo</span>
+                    <input type="password" name="password" placeholder="Minimum 8 znakow" minlength="8" required>
+                </label>
+
+                <label class="field field--optional" id="repeatField">
+                    <span>Powtorz haslo</span>
+                    <input type="password" name="passwordRepeat" placeholder="Powtorz haslo" minlength="8">
+                </label>
+
+                <button type="submit" class="btn" id="submitBtn">Zaloguj sie</button>
+            </form>
+
+            <div class="result" id="result">
+                <div class="result__title">Status</div>
+                <div class="result__body" id="resultBody">Brak prob logowania.</div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
 </body>
 </html>

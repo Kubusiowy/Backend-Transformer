@@ -24,7 +24,7 @@ class RegisterService(
         if(authRepository.existsByEmail(normalizedEmail)) throw Conflict("User already exists")
 
         val id = UUID.randomUUID()
-        val passwordHash = passwordHasher.hashPassword(normalizedEmail)
+        val passwordHash = passwordHasher.hashPassword(req.rawPassword)
 
         val user = req.toUserModel(id,passwordHash)
 

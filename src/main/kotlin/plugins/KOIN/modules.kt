@@ -28,5 +28,5 @@ val AuthModule = module {
     single { AuthRepository() }
     single<PasswordHasher> { PasswordHasherIMPL }
     single { RegisterService(get(), get()) }
-    single { LoginService(get(), get()) }
+    single { LoginService(get(), get(),get()) }
 }
