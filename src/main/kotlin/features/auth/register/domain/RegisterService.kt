@@ -2,7 +2,7 @@ package com.example.features.auth.register.domain
 
 import com.example.core.util.passHash.PasswordHasher
 import com.example.features.auth.common.AuthRepository
-import com.example.features.auth.register.domain.DTO.request.UserRequest
+import com.example.features.auth.register.domain.DTO.request.RegisterRequest
 import com.example.features.auth.register.domain.DTO.request.toUserModel
 import com.example.plugins.StatusPage.errors.BadRequest
 import com.example.plugins.StatusPage.errors.Conflict
@@ -13,7 +13,7 @@ class RegisterService(
     private val passwordHasher: PasswordHasher,
 ) {
 
-    suspend fun register(req: UserRequest): UUID {
+    suspend fun register(req: RegisterRequest): UUID {
 
         if(req.email.isBlank()) throw BadRequest("Please enter a valid email")
         if(!req.email.contains("@")) throw BadRequest("Please enter a valid email")

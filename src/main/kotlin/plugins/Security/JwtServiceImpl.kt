@@ -14,24 +14,22 @@ class JwtServiceImpl(
 
     val algorithm = Algorithm.HMAC256(cfg.jwtSecret)
 
-    override fun generateToken(userId: UUID, tenantId: UUID, role: UserRole): String{
+    override fun generateToken(userId: UUID, role: UserRole): String{
         return JWT.create()
             .withIssuer(cfg.jwtIssuer)
             .withAudience(cfg.jwtAudience)
             .withSubject(userId.toString())
-            .withClaim("tenant_id", tenantId.toString())
             .withClaim("role", role.name)
             .withIssuedAt(Date(System.currentTimeMillis()))
             .withExpiresAt(Date(System.currentTimeMillis() + 15 * 60 * 1000))                 // 15 min
             .sign(algorithm)
     }
 
-    override fun generateRefreshToken(userId: UUID, tenantId: UUID): String {
+    override fun generateRefreshToken(userId: UUID): String {
         return JWT.create()
             .withIssuer(cfg.jwtIssuer)
             .withAudience(cfg.jwtAudience)
             .withSubject(userId.toString())
-            .withClaim("tenant_id", tenantId.toString())
             .withIssuedAt(Date(System.currentTimeMillis()))
             .withExpiresAt(Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)) // 30 days
             .sign(algorithm)

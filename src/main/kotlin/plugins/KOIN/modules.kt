@@ -8,6 +8,7 @@ import com.example.core.config.loadConfigMampDB
 import com.example.core.util.passHash.PasswordHasher
 import com.example.core.util.passHash.PasswordHasherIMPL
 import com.example.features.auth.common.AuthRepository
+import com.example.features.auth.login.domain.LoginService
 import com.example.features.auth.register.domain.RegisterService
 import com.example.plugins.Security.JwtService
 import com.example.plugins.Security.JwtServiceImpl
@@ -27,4 +28,5 @@ val AuthModule = module {
     single { AuthRepository() }
     single<PasswordHasher> { PasswordHasherIMPL }
     single { RegisterService(get(), get()) }
+    single { LoginService(get(), get()) }
 }

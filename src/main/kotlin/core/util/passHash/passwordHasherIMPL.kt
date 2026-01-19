@@ -8,7 +8,7 @@ object PasswordHasherIMPL:PasswordHasher {
         return BCrypt.hashpw(password, BCrypt.gensalt(12))
     }
 
-    override fun verifyPassword(hash: String, password: String): Boolean {
+    override fun verifyPassword(password: String,hash: String): Boolean {
         return BCrypt.checkpw(password, hash)
     }
 

@@ -1,12 +1,9 @@
 package com.example.features.auth.register.domain.DTO.request
 
-import com.example.core.model.user.Role.UserRole
-import com.example.core.model.user.User
 import kotlinx.serialization.Serializable
-import java.util.UUID
 
 @Serializable
-data class UserRequest(
+data class RegisterRequest(
     val email:String,
     val rawPassword: String
 )
