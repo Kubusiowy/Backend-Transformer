@@ -27,7 +27,7 @@ class LoginService(
         println(isValid)
         if(!isValid) throw BadRequest("Invalid credentials Validation")
 
-        val token = jwtService.generateToken(user.id,user.role)
+        val token = jwtService.generateAccessToken(user.id,user.role)
         return LoginResponse(user.id, token)
     }
 }

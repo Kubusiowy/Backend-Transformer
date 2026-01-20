@@ -14,7 +14,7 @@ class JwtServiceImpl(
 
     val algorithm = Algorithm.HMAC256(cfg.jwtSecret)
 
-    override fun generateToken(userId: UUID, role: UserRole): String{
+    override fun generateAccessToken(userId: UUID, role: UserRole): String{
         return JWT.create()
             .withIssuer(cfg.jwtIssuer)
             .withAudience(cfg.jwtAudience)

@@ -6,7 +6,7 @@ import java.util.UUID
 
 
 interface JwtService {
-    fun generateToken(userId: UUID,  role: UserRole): String
+    fun generateAccessToken(userId: UUID,  role: UserRole): String
     fun generateRefreshToken(userId: UUID): String
     fun verifier(): JWTVerifier
 }
