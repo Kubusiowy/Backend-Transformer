@@ -1,6 +1,6 @@
 package com.example.features.auth.login.domain
 
-import com.example.core.util.passHash.PasswordHasher
+import com.example.core.util.passHash.Hasher
 import com.example.features.auth.common.AuthRepository
 import com.example.features.auth.login.domain.DTO.request.LoginRequest
 import com.example.features.auth.login.domain.DTO.response.LoginResponse
@@ -10,7 +10,7 @@ import com.example.plugins.StatusPage.errors.BadRequest
 class LoginService(
     private val repo: AuthRepository,
     private val jwtService: JwtService,
-    private val passwordHasher: PasswordHasher,
+    private val passwordHasher: Hasher,
 ){
 
     suspend fun login(req: LoginRequest): LoginResponse {
@@ -23,7 +23,7 @@ class LoginService(
 
         val user = repo.findByEmail(normalizedEmail)?: throw BadRequest("Invalid credentials")
         println(user)
-        val isValid = passwordHasher.verifyPassword(req.rawPassword, user.passwordHash)
+        val isValid = passwordHasher.verify(req.rawPassword, user.passwordHash)
         println(isValid)
         if(!isValid) throw BadRequest("Invalid credentials Validation")
 
