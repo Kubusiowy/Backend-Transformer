@@ -1,6 +1,7 @@
 package com.example.features.auth.login.route
 
 import com.example.features.auth.login.domain.DTO.request.LoginRequest
+import com.example.features.auth.login.domain.DTO.response.LoginResponse
 import com.example.features.auth.login.domain.LoginService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
@@ -15,7 +16,7 @@ fun Route.loginRoute(){
 
     post("/auth/login") {
         val req = call.receive<LoginRequest>()
-        val response = loginService.login(req)
+        val response: LoginResponse = loginService.login(req)
         call.respond(HttpStatusCode.OK, response)
 
     }

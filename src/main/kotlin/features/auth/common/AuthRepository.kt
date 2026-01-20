@@ -15,6 +15,10 @@ import java.util.UUID
 
 class AuthRepository {
 
+    suspend fun addRefreshTokenToDatabase(){
+
+    }
+
 
     suspend fun addUser(user: User): UUID = dbQuery {
 

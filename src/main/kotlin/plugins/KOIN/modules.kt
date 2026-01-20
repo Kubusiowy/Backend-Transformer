@@ -1,18 +1,15 @@
 package com.example.plugins.KOIN
 
 import com.example.core.config.DBParameters
-import com.example.core.config.loadConfigAppDB
-import com.example.core.config.loadConfigDockerDB
 import com.example.core.config.loadConfigJWT
 import com.example.core.config.loadConfigMampDB
-import com.example.core.util.passHash.PasswordHasher
-import com.example.core.util.passHash.PasswordHasherIMPL
+import com.example.core.util.passHash.Hasher
+import com.example.core.util.passHash.HasherIMPL
 import com.example.features.auth.common.AuthRepository
 import com.example.features.auth.login.domain.LoginService
 import com.example.features.auth.register.domain.RegisterService
 import com.example.plugins.Security.JwtService
 import com.example.plugins.Security.JwtServiceImpl
-import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val LoadCfg = module {
@@ -26,7 +23,7 @@ val JwtModule = module {
 
 val AuthModule = module {
     single { AuthRepository() }
-    single<PasswordHasher> { PasswordHasherIMPL }
+    single<Hasher> { HasherIMPL }
     single { RegisterService(get(), get()) }
     single { LoginService(get(), get(),get()) }
 }

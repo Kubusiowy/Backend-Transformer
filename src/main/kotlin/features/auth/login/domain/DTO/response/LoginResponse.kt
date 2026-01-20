@@ -8,6 +8,7 @@ import java.util.UUID
 data class LoginResponse(
     @Serializable(with = UUIDSerializer::class)
     val id: UUID,
-    val token: String
+    val accessToken: String,
+    val refreshToken: String
 
 )

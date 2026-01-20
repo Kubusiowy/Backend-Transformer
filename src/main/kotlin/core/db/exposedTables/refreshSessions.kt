@@ -2,7 +2,6 @@ package com.example.core.db.exposedTables
 
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.javatime.datetime
-import java.time.LocalDateTime
 
 
 object RefreshSessions : Table("refresh_sessions") {

@@ -2,13 +2,13 @@ package com.example.core.util.passHash
 
 import org.mindrot.jbcrypt.BCrypt
 
-object PasswordHasherIMPL:PasswordHasher {
+object HasherIMPL:Hasher {
 
-    override fun hashPassword(password: String): String {
+    override fun hash(password: String): String {
         return BCrypt.hashpw(password, BCrypt.gensalt(12))
     }
 
-    override fun verifyPassword(password: String,hash: String): Boolean {
+    override fun verify(password: String,hash: String): Boolean {
         return BCrypt.checkpw(password, hash)
     }
 
