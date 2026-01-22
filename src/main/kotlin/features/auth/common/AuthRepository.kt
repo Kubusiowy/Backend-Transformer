@@ -1,6 +1,7 @@
 package com.example.features.auth.common
 
 import com.example.core.db.dbQuery
+import com.example.core.db.exposedTables.RefreshSessions
 import com.example.core.db.exposedTables.Users
 import com.example.core.model.user.Role.UserRole
 import com.example.core.model.user.User
@@ -10,12 +11,20 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
+import java.time.LocalDateTime
 import java.util.UUID
 
 
 class AuthRepository {
 
-
+    suspend fun addRefreshToken(userId: String, tokenRefreshHash: String,expiresAt: LocalDateTime) = dbQuery {
+        RefreshSessions.insert{
+            it[RefreshSessions.userId] = userId
+            it[RefreshSessions.tokenHash] = tokenRefreshHash
+            it[RefreshSessions.createdAt] = LocalDateTime.now()
+            it[RefreshSessions.expiresAt] = expiresAt
+        }
+    }
 
 
     suspend fun addUser(user: User): UUID = dbQuery {

@@ -9,7 +9,7 @@ object RefreshSessions : Table("refresh_sessions") {
 
     val userId = char("user_id", 36) references Users.id
 
-    val tokenHash = binary("token_hash", 32).uniqueIndex()
+    val tokenHash = varchar("token_hash", 255).uniqueIndex()
 
     val createdAt = datetime("created_at")
     val expiresAt = datetime("expires_at")

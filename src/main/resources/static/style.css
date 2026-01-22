@@ -1,7 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=Space+Grotesk:wght@400;500;600&display=swap");
 
 :root {
-    --bg: #0f1219;
+    --bg: #171d2a;
     --bg-2: #151b27;
     --card: rgba(255, 255, 255, 0.08);
     --card-border: rgba(255, 255, 255, 0.16);
@@ -16,15 +16,17 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+
 }
 
 body {
     font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
     color: var(--text);
     background: radial-gradient(circle at top left, #182032, transparent 55%),
-        radial-gradient(circle at 30% 20%, rgba(20, 184, 166, 0.3), transparent 45%),
-        linear-gradient(120deg, var(--bg), #0b0e14 60%, #1c2433 100%);
+        radial-gradient(circle at 30% 20%, rgba(101, 224, 212, 0.3), transparent 45%),
+        linear-gradient(120deg, var(--bg), #171616 60%, #1c2433 100%);
     min-height: 100vh;
+
 }
 
 .page {

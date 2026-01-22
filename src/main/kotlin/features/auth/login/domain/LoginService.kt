@@ -6,6 +6,8 @@ import com.example.features.auth.login.domain.DTO.request.LoginRequest
 import com.example.features.auth.login.domain.DTO.response.LoginResponse
 import com.example.plugins.Security.JwtService
 import com.example.plugins.StatusPage.errors.BadRequest
+import java.time.LocalDateTime
+import java.time.LocalTime
 
 class LoginService(
     private val repo: AuthRepository,
@@ -29,6 +31,9 @@ class LoginService(
 
         val token = jwtService.generateAccessToken(user.id, user.role)
         val refreshToken = jwtService.generateRefreshToken(user.id)
+        val refreshTokenHash = passwordHasher.hash(refreshToken)
+        val expiresAt = LocalDateTime.now().plusDays(30)
+        repo.addRefreshToken(user.id.toString(), refreshTokenHash, expiresAt)
         return LoginResponse(user.id, token, refreshToken)
     }
 }
