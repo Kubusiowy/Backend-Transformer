@@ -9,6 +9,13 @@ const switcher = document.querySelector(".switch");
 const switchButtons = document.querySelectorAll(".switch__btn");
 
 let mode = "login";
+let accessToken = null;
+let refreshToken = null;
+
+const setTokens = (nextAccess, nextRefresh) => {
+    accessToken = nextAccess || null;
+    refreshToken = nextRefresh || null;
+};
 
 const setResult = (message, state) => {
     resultBody.textContent = message;
@@ -93,9 +100,14 @@ form.addEventListener("submit", async (event) => {
 
         const loginPayload = { email, rawPassword: password };
         const loginResult = await request("/auth/login", loginPayload);
-        const token = loginResult?.token || "(brak)";
+        const access = loginResult?.accessToken || loginResult?.token || null;
+        const refresh = loginResult?.refreshToken || null;
         const userId = loginResult?.id || "(brak)";
-        setResult(`Zalogowano. ID: ${userId}. Token: ${token}`, "result--success");
+        setTokens(access, refresh);
+        setResult(
+            `Zalogowano. ID: ${userId}. Access w pamieci: ${access ? "TAK" : "NIE"}. Refresh w pamieci: ${refresh ? "TAK" : "NIE"}.`,
+            "result--success"
+        );
     } catch (error) {
         setResult(error?.message || "Blad polaczenia z serwerem.", "result--error");
     }

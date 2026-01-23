@@ -7,6 +7,8 @@ import com.example.core.model.user.Role.UserRole
 import com.example.core.model.user.User
 import com.example.features.auth.common.mappers.toUser
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
@@ -18,7 +20,7 @@ import java.util.UUID
 class AuthRepository {
 
     suspend fun addRefreshToken(userId: String, tokenRefreshHash: String,expiresAt: LocalDateTime) = dbQuery {
-        RefreshSessions.insert{
+        RefreshSessions.insert {
             it[RefreshSessions.userId] = userId
             it[RefreshSessions.tokenHash] = tokenRefreshHash
             it[RefreshSessions.createdAt] = LocalDateTime.now()
@@ -27,51 +29,68 @@ class AuthRepository {
     }
 
 
-    suspend fun addUser(user: User): UUID = dbQuery {
 
-        Users.insert {
-            it[Users.id] = user.id .toString()
-            it[Users.email] = user.email
-            it[Users.passwordHash] = user.passwordHash
-            it[Users.role] = user.role
+        suspend fun addUser(user: User): UUID = dbQuery {
+
+            Users.insert {
+                it[Users.id] = user.id.toString()
+                it[Users.email] = user.email
+                it[Users.passwordHash] = user.passwordHash
+                it[Users.role] = user.role
+            }
+            user.id
         }
-        user.id
-    }
 
-    suspend fun findByEmail(email: String): User? = dbQuery {
-        Users
-            .selectAll()
-            .where { Users.email eq email }
-            .firstOrNull()
-            ?.toUser()
+        suspend fun findByEmail(email: String): User? = dbQuery {
+            Users
+                .selectAll()
+                .where { Users.email eq email }
+                .firstOrNull()
+                ?.toUser()
 
-    }
-
-    suspend fun existsByEmail(email: String): Boolean = dbQuery {
-        Users.selectAll()
-            .where { Users.email eq email }
-            .limit(1)
-            .empty().not()
-    }
-
-    suspend fun updatePasswordHash(id:UUID,newHashPass:String):Int = dbQuery {
-        Users.update({ Users.id eq id.toString() }) {
-            it[passwordHash] = newHashPass
         }
-    }
 
-    suspend fun updateRole(id: UUID, role: UserRole): Int = dbQuery {
-        Users.update({Users.id eq id.toString() }) {
-            it[Users.role] = role
+        suspend fun findById(id: UUID): User? = dbQuery {
+            Users
+                .selectAll()
+                .where { Users.id eq id.toString() }
+                .firstOrNull()
+                ?.toUser()
         }
-    }
 
-    suspend fun deleteById(id: UUID) = dbQuery {
-        Users.deleteWhere { Users.id eq id.toString() }
-    }
+        suspend fun findActiveRefreshTokenHashesByUserId(userId: String): List<String> = dbQuery {
+            RefreshSessions
+                .selectAll()
+                .where {
+                    (RefreshSessions.userId eq userId) and
+                            RefreshSessions.revokedAt.isNull() and
+                            (RefreshSessions.expiresAt greater LocalDateTime.now())
+                }
+                .map { it[RefreshSessions.tokenHash] }
+        }
 
+        suspend fun existsByEmail(email: String): Boolean = dbQuery {
+            Users.selectAll()
+                .where { Users.email eq email }
+                .limit(1)
+                .empty().not()
+        }
 
+        suspend fun updatePasswordHash(id: UUID, newHashPass: String): Int = dbQuery {
+            Users.update({ Users.id eq id.toString() }) {
+                it[passwordHash] = newHashPass
+            }
+        }
 
+        suspend fun updateRole(id: UUID, role: UserRole): Int = dbQuery {
+            Users.update({ Users.id eq id.toString() }) {
+                it[Users.role] = role
+            }
+        }
+
+        suspend fun deleteById(id: UUID) = dbQuery {
+            Users.deleteWhere { Users.id eq id.toString() }
+        }
 
 
 
