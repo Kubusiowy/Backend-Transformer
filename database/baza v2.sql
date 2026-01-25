@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:8889
--- Generation Time: Sty 21, 2026 at 09:46 PM
+-- Generation Time: Sty 25, 2026 at 12:38 PM
 -- Wersja serwera: 8.0.44
 -- Wersja PHP: 8.3.28
 
@@ -77,7 +77,7 @@ CREATE TABLE `metrics_latest_kv` (
 CREATE TABLE `refresh_sessions` (
   `id` bigint UNSIGNED NOT NULL,
   `user_id` char(36) NOT NULL,
-  `token_hash` varbinary(32) NOT NULL,
+  `token_hash` varchar(255) NOT NULL,
   `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   `expires_at` datetime(3) NOT NULL,
   `revoked_at` datetime(3) DEFAULT NULL,
@@ -86,6 +86,16 @@ CREATE TABLE `refresh_sessions` (
   `user_agent` varchar(255) DEFAULT NULL,
   `ip` varbinary(16) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Zrzut danych tabeli `refresh_sessions`
+--
+
+INSERT INTO `refresh_sessions` (`id`, `user_id`, `token_hash`, `created_at`, `expires_at`, `revoked_at`, `replaced_by`, `device_id`, `user_agent`, `ip`) VALUES
+(1, '5ba0542d-fb45-433a-b611-037eaf440071', '$2a$12$04pgRsU1W.JHLGCqfRHBN.qXuCpLXbMlEJI8EncUb.GuH2WyTC0ja', '2026-01-22 21:11:18.050', '2026-02-21 21:11:18.046', NULL, NULL, NULL, NULL, NULL),
+(2, 'e729b2ad-4673-4966-9788-c7abb5a35d23', '$2a$12$bAjEmjR06nSFkoR0r7o37.0wRp.GkGL5z/fa/OpFGnq.gwTYQ7qnW', '2026-01-23 15:26:27.867', '2026-02-22 15:26:27.865', NULL, NULL, NULL, NULL, NULL),
+(3, 'e729b2ad-4673-4966-9788-c7abb5a35d23', '$2a$12$1PmUPr7FFt0pjHfqHZGnZ.1X1vIRkJAydvTfY9j6Kli.G3eH.hSgS', '2026-01-23 15:26:40.758', '2026-02-22 15:26:40.758', NULL, NULL, NULL, NULL, NULL),
+(4, '0e66f82a-6aef-48b6-b32c-da3b50f96f4f', '$2a$12$MTcptMED5Tb6Gr3vR3qvD.fSz0hsFmAnFiR0/2uvPeLI6dGnIyEdm', '2026-01-23 15:30:06.116', '2026-02-22 15:30:06.113', NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -121,15 +131,19 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `email`, `password_hash`, `role`, `created_at`) VALUES
 ('02d496ba-01a5-4b7f-aec0-c6d2b4784047', 'kutas@xd', '$2a$12$YEzZ1yRi.iwcjaTAhivx6.f5MgS8zAHLJ9bRFdHcge6LXBnx8gIty', 'USER', '2026-01-19 10:31:18'),
+('0e66f82a-6aef-48b6-b32c-da3b50f96f4f', 'sda@dwa', '$2a$12$exB22K5gw1PBj6IhWbTF6Opf6S49qr4qwZ0.Gb6K0LzafE2ryYE6S', 'USER', '2026-01-23 14:30:01'),
 ('12d703d8-c4b8-4779-ab74-e744c160c530', 'vica@op.pl', '$2a$12$x7LEzUQTPCT79s4kV42ZoOKck1efEAhYlZ.3e74iH78y5ROGtq.TK', 'USER', '2026-01-19 12:16:21'),
 ('2e7ef3b6-f13b-4cdc-98d1-3835b0619eda', 'cwel@', '$2a$12$dZrwt3xDi9k4.csFj1n26OVQdXfYZn4P.4FQOr3oC6Gse9N7bQCd.', 'USER', '2026-01-19 10:46:39'),
+('5ba0542d-fb45-433a-b611-037eaf440071', 'wad@adw', '$2a$12$fS9GzGSR4py1VVpkJNecbOjikcogqMPsO0bIzw7SdLVZSmtBV82s.', 'USER', '2026-01-22 20:09:10'),
 ('6622a52f-653c-491b-baf7-3bba348096a1', 'firkowskikuba@gmail.com', '$2a$12$fOVROhpY9XTjkd3Cv.sr1OoufcsrS7Otr3PsqicuOUDGcMwjzbQXi', 'USER', '2026-01-19 10:23:54'),
 ('68643da2-3693-4c69-8d34-ddac074d67d8', 'essa@maol.com', '$2a$12$mv2XdLbmgUEbndrRg9CLmOChmJZi/k8OHr3oazro.DGh6QXBHYWB.', 'USER', '2026-01-19 10:27:43'),
 ('71c5a2f2-5e1b-4ca2-b812-29348865e57c', 'k@k', '$2a$12$uEs47wwHp8FBtkZsMUKhfuGe4rXj67w0/hqDLGUKUgcK86vCP0zYu', 'USER', '2026-01-19 10:25:33'),
 ('79869ad3-fd31-4d32-b87a-c96f53218ab2', '1@1', '$2a$12$0/r759FH/.ljDCcRGHNUhO9UBX6LhCGvPrf7YmOBDb21.eOTuVpZK', 'USER', '2026-01-20 10:37:04'),
 ('9e339fdd-521a-4cf9-96b4-ce39dda8b189', 'kuba@gmail', '$2a$12$Q2ngNpuPyj0FE0Gh/i218.dRo1sFE3j.ZBM86UTfuZ.7EGRjbt7XG', 'USER', '2026-01-19 10:36:05'),
 ('c41ecee7-dca0-4a41-ab80-ef1eaf21abd9', 'kuba@gmail.com', '$2a$12$VHvlM8YE9I7xoy8dmUSPieAX128a.aFeDFRttM.wTZGGAhbi0E8qe', 'USER', '2026-01-16 12:44:24'),
-('efc6eea1-fc24-44cc-81b2-0286f4b1b9de', 'randomrandi@gmail.com', '$2a$12$yN9Yi5p0HLT8s8lchdeDvuigkNFGWX5LMSCh/Yi1qhOgoIsVrWtUy', 'USER', '2026-01-20 13:03:44');
+('e729b2ad-4673-4966-9788-c7abb5a35d23', 'firek@gmail', '$2a$12$SglrL9ImIDf4HhILsNg5He3v08tKhE3Ycs0H4O8vwluYiznesjCTq', 'USER', '2026-01-23 14:26:25'),
+('efc6eea1-fc24-44cc-81b2-0286f4b1b9de', 'randomrandi@gmail.com', '$2a$12$yN9Yi5p0HLT8s8lchdeDvuigkNFGWX5LMSCh/Yi1qhOgoIsVrWtUy', 'USER', '2026-01-20 13:03:44'),
+('fc3e2a23-1e22-4752-a3b9-8ff9921e7626', 'cwelarz@op.pl', '$2a$12$Wc0QNKfT6B.so6o9kFPXuuY77K464U4mZRnk6xdSQqf4vO/5z37Ry', 'USER', '2026-01-22 19:52:52');
 
 --
 -- Indeksy dla zrzutów tabel
@@ -187,7 +201,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT dla tabeli `refresh_sessions`
 --
 ALTER TABLE `refresh_sessions`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- Ograniczenia dla zrzutów tabel
