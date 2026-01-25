@@ -108,6 +108,8 @@ form.addEventListener("submit", async (event) => {
             `Zalogowano. ID: ${userId}. Access w pamieci: ${access ? "TAK" : "NIE"}. Refresh w pamieci: ${refresh ? "TAK" : "NIE"}.`,
             "result--success"
         );
+        console.log(access)
+        console.log(refresh)
     } catch (error) {
         setResult(error?.message || "Blad polaczenia z serwerem.", "result--error");
     }
