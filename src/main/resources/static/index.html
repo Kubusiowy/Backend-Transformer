@@ -3,41 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Logowanie i rejestracja - Backend Transformer</title>
+    <title>Logowanie - Backend Transformer</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <main class="page">
+    <header class="topbar">
+        <div class="topbar__brand">Backend Transformer</div>
+        <nav class="topbar__nav">
+            <a class="topbar__link" href="/static/panel.html">Panel</a>
+        </nav>
+    </header>
+
+    <main class="page page--auth">
         <section class="hero">
             <div class="hero__badge">Secure Access</div>
-            <h1>Backend Transformer</h1>
+            <h1>Logowanie do panelu</h1>
             <p class="hero__lead">
-                Zaloguj sie lub zaloz konto, aby zarzadzac transformatorami, metrykami i integracjami.
+                Zaloguj sie, aby otrzymac access token. Refresh token zostanie zapisany lokalnie,
+                a panel bedzie go uzywal do odswiezania dostepu.
             </p>
             <div class="hero__stats">
                 <div>
-                    <span class="stat__value">99.98%</span>
-                    <span class="stat__label">Uptime</span>
+                    <span class="stat__value">JWT</span>
+                    <span class="stat__label">Autoryzacja</span>
                 </div>
                 <div>
                     <span class="stat__value">15 min</span>
                     <span class="stat__label">Token TTL</span>
                 </div>
                 <div>
-                    <span class="stat__value">JWT</span>
-                    <span class="stat__label">Autoryzacja</span>
+                    <span class="stat__value">/auth</span>
+                    <span class="stat__label">Endpointy</span>
                 </div>
             </div>
         </section>
 
         <section class="card">
             <div class="card__header">
-                <span class="card__eyebrow">Panel uzytkownika</span>
+                <span class="card__eyebrow">Konto</span>
                 <h2 id="formTitle">Zaloguj sie</h2>
-                <p id="formSubtitle">Wprowadz dane, aby otrzymac token dostepu.</p>
+                <p id="formSubtitle">Podaj email i haslo, aby wejsc do panelu.</p>
             </div>
 
-            <div class="switch" role="tablist" aria-label="Tryb formularza">
+            <div class="switch" role="tablist" aria-label="Tryb formularza" id="modeSwitch">
                 <button class="switch__btn" type="button" data-mode="login" aria-pressed="true">Logowanie</button>
                 <button class="switch__btn" type="button" data-mode="register" aria-pressed="false">Rejestracja</button>
                 <span class="switch__pill" aria-hidden="true"></span>
@@ -46,12 +54,12 @@
             <form id="authForm" class="form" novalidate>
                 <label class="field">
                     <span>Email</span>
-                    <input type="email" name="email" placeholder="uzytkownik@firma.pl" required>
+                    <input type="email" name="email" placeholder="uzytkownik@firma.pl" autocomplete="email" required>
                 </label>
 
                 <label class="field">
                     <span>Haslo</span>
-                    <input type="password" name="password" placeholder="Minimum 8 znakow" minlength="8" required>
+                    <input type="password" name="password" placeholder="Minimum 8 znakow" minlength="8" autocomplete="current-password" required>
                 </label>
 
                 <label class="field field--optional" id="repeatField">
@@ -64,12 +72,11 @@
 
             <div class="result" id="result">
                 <div class="result__title">Status</div>
-                <div class="result__body" id="resultBody">Brak prob logowania.</div>
+                <div class="result__body" id="resultBody">Wybierz logowanie lub rejestracje.</div>
             </div>
         </section>
     </main>
 
-
-    <script src="script.js"></script>
+    <script src="login.js"></script>
 </body>
 </html>

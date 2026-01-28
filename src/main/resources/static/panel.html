@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Panel uzytkownika - Backend Transformer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar__brand">Backend Transformer</div>
+        <nav class="topbar__nav">
+            <a class="topbar__link" href="/static/index.html">Logowanie</a>
+            <button class="btn btn--ghost" id="logoutBtn" type="button">Wyloguj</button>
+        </nav>
+    </header>
+
+    <main class="page page--panel">
+        <section class="stack">
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Proste kroki</span>
+                    <h2>Jak korzystac z panelu</h2>
+                    <p>Ten panel jest przygotowany dla osoby nietechnicznej. Dane transformatorow zapisuja sie lokalnie w przegladarce.</p>
+                </div>
+                <ol class="steps">
+                    <li>Wpisz dane transformatora i kliknij "Dodaj".</li>
+                    <li>Wybierz transformator z listy po prawej stronie.</li>
+                    <li>Kliknij "Odczytaj dane", aby zobaczyc przykladowe wyniki.</li>
+                </ol>
+                <div class="note">Uwaga: To wersja demo bez prawdziwych endpointow. Gdy podasz endpointy, podlacze realne dane.</div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Transformatory</span>
+                    <h2>Dodaj nowy transformator</h2>
+                    <p>Wypelnij formularz prostymi informacjami. Pola z gwiazdka sa wymagane.</p>
+                </div>
+
+                <form id="addTransformerForm" class="form form--two" novalidate>
+                    <label class="field">
+                        <span>Nazwa *</span>
+                        <input type="text" name="name" placeholder="np. Stacja Pn-12" required>
+                    </label>
+                    <label class="field">
+                        <span>Lokalizacja</span>
+                        <input type="text" name="location" placeholder="np. Warszawa, ul. Przemyslowa 8">
+                    </label>
+                    <label class="field">
+                        <span>Numer seryjny</span>
+                        <input type="text" name="serial" placeholder="np. TR-2025-0001">
+                    </label>
+                    <label class="field">
+                        <span>Moc (kVA)</span>
+                        <input type="number" name="power" min="1" placeholder="np. 630">
+                    </label>
+                    <label class="field field--full">
+                        <span>Notatka</span>
+                        <input type="text" name="note" placeholder="np. Nowy transformator do odbioru">
+                    </label>
+                    <div class="form__actions field--full">
+                        <button class="btn" type="submit">Dodaj transformator</button>
+                        <button class="btn btn--ghost" id="seedSamples" type="button">Wczytaj przykladowe dane</button>
+                    </div>
+                </form>
+
+                <div class="result" id="transformerResult">
+                    <div class="result__title">Status</div>
+                    <div class="result__body" id="transformerResultBody">Czekam na dane.</div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Lista</span>
+                    <h2>Twoje transformatory</h2>
+                    <p>Kliknij "Wybierz", aby zobaczyc szczegoly i odczytac dane.</p>
+                </div>
+
+                <div id="transformerList" class="list"></div>
+                <div id="transformerEmpty" class="empty">Brak transformatorow. Dodaj pierwszy wpis powyzej.</div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Odczyt</span>
+                    <h2>Wybrany transformator</h2>
+                    <p>Wybierz pozycje z listy. Dane ponizej to przykladowy odczyt (demo).</p>
+                </div>
+
+                <div class="detail" id="selectedDetail">
+                    <div class="detail__row"><span>Nazwa</span><strong id="detailName">(brak)</strong></div>
+                    <div class="detail__row"><span>Lokalizacja</span><strong id="detailLocation">(brak)</strong></div>
+                    <div class="detail__row"><span>Numer seryjny</span><strong id="detailSerial">(brak)</strong></div>
+                    <div class="detail__row"><span>Moc</span><strong id="detailPower">(brak)</strong></div>
+                    <div class="detail__row"><span>Notatka</span><strong id="detailNote">(brak)</strong></div>
+                </div>
+
+                <div class="metrics" id="metricsBox">
+                    <div class="metrics__row"><span>Napiecie</span><strong id="metricVoltage">(brak)</strong></div>
+                    <div class="metrics__row"><span>Temperatura</span><strong id="metricTemp">(brak)</strong></div>
+                    <div class="metrics__row"><span>Obciazenie</span><strong id="metricLoad">(brak)</strong></div>
+                    <div class="metrics__row"><span>Ostatni odczyt</span><strong id="metricTime">(brak)</strong></div>
+                </div>
+
+                <div class="controls">
+                    <div class="controls__row">
+                        <button class="btn" id="readNow" type="button">Odczytaj dane</button>
+                        <button class="btn btn--ghost" id="deleteSelected" type="button">Usun zaznaczony</button>
+                    </div>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <script src="panel.js"></script>
+</body>
+</html>
