@@ -809,6 +809,20 @@ body.a11y-reduce-motion * {
     padding-bottom: 6px;
 }
 
+.chart {
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 12px;
+    margin-bottom: 16px;
+}
+
+.chart canvas {
+    width: 100%;
+    height: 240px;
+    display: block;
+}
+
 .table-wrap {
     border-radius: 16px;
     border: 1px solid var(--border);

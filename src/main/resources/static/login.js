@@ -51,6 +51,9 @@ const setMode = (nextMode) => {
 };
 
 const request = async (url, payload) => {
+    if (window.BT_API?.request) {
+        return window.BT_API.request("POST", url, payload);
+    }
     const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -1,7 +1,35 @@
 (() => {
+    const CONFIG = window.BT_CONFIG || {};
+    const API_BASE = (CONFIG.apiBase || "").replace(/\/$/, "");
+    const WS_BASE =
+        (CONFIG.wsBase || "").replace(/\/$/, "") ||
+        `${window.location.protocol === "https:" ? "wss://" : "ws://"}${window.location.host}`;
+
     const STORAGE = window.BT_STORAGE || {
         refresh: "bt_refresh_token",
         access: "bt_access_token"
+    };
+
+    const buildUrl = (path) => {
+        if (!path) {
+            return API_BASE || "";
+        }
+        if (/^https?:\/\//i.test(path)) {
+            return path;
+        }
+        const normalized = path.startsWith("/") ? path : `/${path}`;
+        return `${API_BASE}${normalized}`;
+    };
+
+    const buildWsUrl = (path) => {
+        if (!path) {
+            return WS_BASE;
+        }
+        if (/^wss?:\/\//i.test(path)) {
+            return path;
+        }
+        const normalized = path.startsWith("/") ? path : `/${path}`;
+        return `${WS_BASE}${normalized}`;
     };
 
     const getAccessToken = () => sessionStorage.getItem(STORAGE.access);
@@ -12,7 +40,7 @@
         if (!refreshToken) {
             return null;
         }
-        const response = await fetch("/auth/refresh", {
+        const response = await fetch(buildUrl("/auth/refresh"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ refreshToken })
@@ -34,7 +62,7 @@
         if (token) {
             headers.Authorization = `Bearer ${token}`;
         }
-        const response = await fetch(url, {
+        const response = await fetch(buildUrl(url), {
             method,
             headers,
             body: body ? JSON.stringify(body) : undefined
@@ -44,7 +72,7 @@
             const refreshed = await refreshAccessToken();
             if (refreshed) {
                 headers.Authorization = `Bearer ${refreshed}`;
-                const retry = await fetch(url, {
+                const retry = await fetch(buildUrl(url), {
                     method,
                     headers,
                     body: body ? JSON.stringify(body) : undefined
@@ -73,6 +101,9 @@
 
     window.BT_API = {
         request: apiRequest,
-        refreshAccessToken
+        refreshAccessToken,
+        buildUrl,
+        buildWsUrl,
+        getAccessToken
     };
 })();

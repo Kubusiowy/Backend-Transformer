@@ -12,7 +12,6 @@ import org.jetbrains.exposed.sql.update
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.lessEq
-import org.jetbrains.exposed.sql.withDistinct
 import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.math.max
@@ -46,7 +45,6 @@ class MetricsRepository {
 
     suspend fun listKeys(transformerId: UUID): List<String> = dbQuery {
         Metrics1mKv
-            .slice(Metrics1mKv.key)
             .selectAll()
             .where { Metrics1mKv.transformerId eq transformerId.toString() }
             .withDistinct()

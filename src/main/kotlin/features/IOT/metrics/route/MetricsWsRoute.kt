@@ -11,6 +11,7 @@ import io.ktor.server.routing.Route
 import io.ktor.server.websocket.webSocket
 import io.ktor.websocket.Frame
 import io.ktor.websocket.CloseReason
+import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import kotlinx.serialization.json.Json
 import org.koin.ktor.ext.inject

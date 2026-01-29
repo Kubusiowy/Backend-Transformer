@@ -9,7 +9,7 @@ import com.example.core.db.exposedTables.RegisterType
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
 import java.util.UUID
@@ -92,7 +92,7 @@ class MeterRepository {
         slaveId: Int,
         pollIntervalMs: Int,
     ): MeterRecord = dbQuery {
-        val newId = Meter.insertAndGetId { row ->
+        val newId = Meter.insert { row ->
             row[Meter.transformerId] = transformerId.toString()
             row[Meter.name] = name
             row[Meter.deviceCode] = deviceCode
@@ -103,7 +103,7 @@ class MeterRepository {
             row[Meter.stopBits] = stopBits
             row[Meter.slaveId] = slaveId
             row[Meter.pollIntervalMs] = pollIntervalMs
-        }.value
+        } get Meter.id
         rowToMeter(Meter.selectAll().where { Meter.id eq newId }.first())
     }
 
@@ -145,7 +145,7 @@ class MeterRepository {
         enabled: Boolean,
         orderIndex: Int,
     ): RegisterRecord = dbQuery {
-        val newId = MeterRegister.insertAndGetId { row ->
+        val newId = MeterRegister.insert { row ->
             row[MeterRegister.meterId] = meterId
             row[MeterRegister.name] = name
             row[MeterRegister.registerType] = registerType
@@ -156,7 +156,7 @@ class MeterRepository {
             row[MeterRegister.unit] = unit
             row[MeterRegister.enabled] = enabled
             row[MeterRegister.orderIndex] = orderIndex
-        }.value
+        } get MeterRegister.id
         rowToRegister(MeterRegister.selectAll().where { MeterRegister.id eq newId }.first())
     }
 

@@ -40,7 +40,7 @@
                 <div class="card__header">
                     <span class="card__eyebrow">Odczyt</span>
                     <h2>Wybrany transformator</h2>
-                    <p>Wybierz pozycje z listy w sekcji Transformatory. Dane ponizej to przykladowy odczyt (demo).</p>
+                    <p>Wybierz pozycje z listy w sekcji Transformatory. Dane ponizej pochodza z backendu.</p>
                 </div>
 
                 <div class="detail" id="selectedDetail">
@@ -74,6 +74,10 @@
                         <input type="number" id="metricLimit" min="10" max="5000" value="120">
                     </label>
                     <div class="metrics-filter__status" id="metricsStatus">WebSocket: offline</div>
+                </div>
+
+                <div class="chart" id="metricsChartWrap">
+                    <canvas id="metricsChart" width="800" height="240"></canvas>
                 </div>
 
                 <div class="table-wrap" id="metricsTableWrap">

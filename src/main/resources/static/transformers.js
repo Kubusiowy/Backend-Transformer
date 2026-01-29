@@ -3,16 +3,13 @@ const transformerResult = document.getElementById("transformerResult");
 const transformerResultBody = document.getElementById("transformerResultBody");
 const transformerList = document.getElementById("transformerList");
 const transformerEmpty = document.getElementById("transformerEmpty");
-const seedSamplesBtn = document.getElementById("seedSamples");
+const refreshBtn = document.getElementById("refreshList");
 
 const auth = window.BT_AUTH || {};
-const currentUserId = auth.userId || "(brak)";
 const isAdmin = Boolean(auth.isAdmin);
 
-let allTransformers = window.BTData ? window.BTData.loadTransformers() : [];
-let selectedId = window.BTData ? window.BTData.getSelectedId() : null;
-
-const getVisibleTransformers = () => (window.BTData ? window.BTData.getScopedTransformers(allTransformers) : []);
+let transformers = [];
+let meterCounts = {};
 
 const setResult = (message, state) => {
     if (!transformerResultBody || !transformerResult) {
@@ -25,25 +22,23 @@ const setResult = (message, state) => {
     }
 };
 
-const saveAll = () => {
-    if (window.BTData) {
-        window.BTData.saveTransformers(allTransformers);
-    }
-};
+const getSelectedId = () => (window.BTData ? window.BTData.getSelectedId() : null);
 
-const setSelected = (id) => {
-    selectedId = id;
+const setSelectedId = (id) => {
     if (window.BTData) {
         window.BTData.setSelectedId(id);
         window.BTData.setSelectedMeterInfo(null, null);
     }
-    renderTransformers();
 };
 
 const ensureSelectedVisible = () => {
-    const visible = getVisibleTransformers();
-    if (!visible.find((t) => t.id === selectedId)) {
-        setSelected(null);
+    const selectedId = getSelectedId();
+    if (!selectedId) {
+        return;
+    }
+    const exists = transformers.some((t) => t.id === selectedId);
+    if (!exists) {
+        setSelectedId(null);
     }
 };
 
@@ -51,18 +46,20 @@ const renderTransformers = () => {
     if (!transformerList || !transformerEmpty) {
         return;
     }
-    const visible = getVisibleTransformers();
     transformerList.innerHTML = "";
 
-    if (!visible.length) {
+    if (!transformers.length) {
         transformerEmpty.style.display = "block";
         transformerList.style.display = "none";
-    } else {
-        transformerEmpty.style.display = "none";
-        transformerList.style.display = "grid";
+        return;
     }
 
-    visible.forEach((transformer) => {
+    transformerEmpty.style.display = "none";
+    transformerList.style.display = "grid";
+
+    const selectedId = getSelectedId();
+
+    transformers.forEach((transformer) => {
         const item = document.createElement("div");
         item.className = "list__item";
         if (transformer.id === selectedId) {
@@ -82,22 +79,17 @@ const renderTransformers = () => {
 
         const tags = document.createElement("div");
         tags.className = "list__tags";
-        if (transformer.power) {
-            const tag = document.createElement("span");
-            tag.className = "tag";
-            tag.textContent = `${transformer.power} kVA`;
-            tags.append(tag);
-        }
-        if (transformer.serial) {
-            const tag = document.createElement("span");
-            tag.className = "tag";
-            tag.textContent = transformer.serial;
-            tags.append(tag);
-        }
+
         const meterTag = document.createElement("span");
         meterTag.className = "tag";
-        meterTag.textContent = `${transformer.meters?.length || 0} miernikow`;
+        const count = meterCounts[transformer.id];
+        meterTag.textContent = `Mierniki: ${typeof count === "number" ? count : "..."}`;
         tags.append(meterTag);
+
+        const idTag = document.createElement("span");
+        idTag.className = "tag";
+        idTag.textContent = transformer.id;
+        tags.append(idTag);
 
         if (isAdmin) {
             const ownerTag = document.createElement("span");
@@ -115,7 +107,10 @@ const renderTransformers = () => {
         selectBtn.type = "button";
         selectBtn.className = "btn btn--ghost btn--small";
         selectBtn.textContent = "Wybierz";
-        selectBtn.addEventListener("click", () => setSelected(transformer.id));
+        selectBtn.addEventListener("click", () => {
+            setSelectedId(transformer.id);
+            renderTransformers();
+        });
 
         const deleteBtn = document.createElement("button");
         deleteBtn.type = "button";
@@ -129,40 +124,81 @@ const renderTransformers = () => {
     });
 };
 
-const addTransformer = (payload) => {
-    const transformer = {
-        id: window.BTData ? window.BTData.safeId() : String(Date.now()),
-        userId: currentUserId,
-        name: payload.name,
-        location: payload.location || "",
-        serial: payload.serial || "",
-        power: payload.power || "",
-        note: payload.note || "",
-        createdAt: new Date().toISOString(),
-        meters: []
-    };
-    allTransformers.unshift(transformer);
-    saveAll();
-    setSelected(transformer.id);
-    setResult("Transformator dodany.", "result--success");
+const loadMeterCounts = async () => {
+    if (!window.BT_API?.request) {
+        return;
+    }
+    const counts = {};
+    await Promise.all(
+        transformers.map(async (transformer) => {
+            try {
+                const meters = await window.BT_API.request("GET", `/transformers/${transformer.id}/meters`);
+                counts[transformer.id] = Array.isArray(meters) ? meters.length : 0;
+            } catch (error) {
+                counts[transformer.id] = 0;
+            }
+        })
+    );
+    meterCounts = counts;
+    renderTransformers();
 };
 
-const removeTransformer = (id) => {
-    const transformer = allTransformers.find((t) => t.id === id);
-    if (!transformer) {
+const fetchTransformers = async () => {
+    if (!window.BT_API?.request) {
+        setResult("Brak konfiguracji API.", "result--error");
         return;
     }
-    if (!isAdmin && transformer.userId !== currentUserId) {
-        setResult("Brak uprawnien do usuwania cudzych transformatorow.", "result--error");
+    setResult("Pobieram dane...", null);
+    try {
+        const data = await window.BT_API.request("GET", "/transformers");
+        transformers = Array.isArray(data) ? data : [];
+        ensureSelectedVisible();
+        renderTransformers();
+        loadMeterCounts();
+        setResult("Lista transformatorow zaktualizowana.", "result--success");
+    } catch (error) {
+        setResult(error?.message || "Blad pobierania danych.", "result--error");
+    }
+};
+
+const addTransformer = async (payload) => {
+    if (!window.BT_API?.request) {
+        setResult("Brak konfiguracji API.", "result--error");
         return;
     }
-    allTransformers = allTransformers.filter((t) => t.id !== id);
-    if (selectedId === id) {
-        setSelected(null);
+    setResult("Dodawanie transformatora...", null);
+    try {
+        const created = await window.BT_API.request("POST", "/transformers", payload);
+        if (created) {
+            transformers.unshift(created);
+            setSelectedId(created.id);
+        }
+        renderTransformers();
+        loadMeterCounts();
+        setResult("Transformator dodany.", "result--success");
+    } catch (error) {
+        setResult(error?.message || "Blad zapisu.", "result--error");
     }
-    saveAll();
-    renderTransformers();
-    setResult("Transformator usuniety.", "result--success");
+};
+
+const removeTransformer = async (id) => {
+    if (!window.BT_API?.request) {
+        setResult("Brak konfiguracji API.", "result--error");
+        return;
+    }
+    setResult("Usuwanie transformatora...", null);
+    try {
+        await window.BT_API.request("DELETE", `/transformers/${id}`);
+        transformers = transformers.filter((t) => t.id !== id);
+        if (getSelectedId() === id) {
+            setSelectedId(null);
+        }
+        renderTransformers();
+        loadMeterCounts();
+        setResult("Transformator usuniety.", "result--success");
+    } catch (error) {
+        setResult(error?.message || "Blad usuwania.", "result--error");
+    }
 };
 
 if (addForm) {
@@ -171,60 +207,19 @@ if (addForm) {
         const formData = new FormData(addForm);
         const name = String(formData.get("name") || "").trim();
         const location = String(formData.get("location") || "").trim();
-        const serial = String(formData.get("serial") || "").trim();
-        const power = String(formData.get("power") || "").trim();
-        const note = String(formData.get("note") || "").trim();
 
         if (!name) {
             setResult("Pole 'Nazwa' jest wymagane.", "result--error");
             return;
         }
 
-        addTransformer({ name, location, serial, power, note });
+        addTransformer({ name, location: location || null });
         addForm.reset();
     });
 }
 
-if (seedSamplesBtn) {
-    seedSamplesBtn.addEventListener("click", () => {
-        const visible = getVisibleTransformers();
-        if (visible.length) {
-            setResult("Lista nie jest pusta. Dodaj recznie lub usun istniejece.", "result--error");
-            return;
-        }
-        const samples = [
-            {
-                id: window.BTData.safeId(),
-                userId: currentUserId,
-                name: "Stacja Polnoc 12",
-                location: "Warszawa, ul. Przemyslowa 8",
-                serial: "TR-2025-0001",
-                power: "630",
-                note: "Regularna kontrola raz w miesiacu",
-                createdAt: new Date().toISOString(),
-                meters: []
-            },
-            {
-                id: window.BTData.safeId(),
-                userId: currentUserId,
-                name: "Magazyn Zachod",
-                location: "Lodz, ul. Kolejowa 4",
-                serial: "TR-2025-0002",
-                power: "1000",
-                note: "Nowa instalacja",
-                createdAt: new Date().toISOString(),
-                meters: []
-            }
-        ];
-        allTransformers = [...samples, ...allTransformers];
-        saveAll();
-        setSelected(samples[0].id);
-        setResult("Wczytano przykladowe dane.", "result--success");
-    });
+if (refreshBtn) {
+    refreshBtn.addEventListener("click", () => fetchTransformers());
 }
 
-ensureSelectedVisible();
-renderTransformers();
-if (!getVisibleTransformers().length) {
-    setResult("Czekam na dane.", null);
-}
+fetchTransformers();

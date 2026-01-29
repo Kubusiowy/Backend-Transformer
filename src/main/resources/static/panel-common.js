@@ -5,7 +5,6 @@ const STORAGE = {
     role: "bt_role",
     email: "bt_user_email",
     lastLogin: "bt_last_login",
-    transformers: "bt_transformers",
     selected: "bt_transformer_selected",
     meterSelected: "bt_meter_selected",
     lastRead: "bt_last_read"
@@ -13,24 +12,27 @@ const STORAGE = {
 
 window.BT_STORAGE = STORAGE;
 
-const refreshToken = localStorage.getItem(STORAGE.refresh);
-const accessToken = sessionStorage.getItem(STORAGE.access);
-const userId = localStorage.getItem(STORAGE.user) || "(brak)";
-const role = (localStorage.getItem(STORAGE.role) || "user").toLowerCase();
-const userEmail = localStorage.getItem(STORAGE.email) || "(brak)";
-const isAdmin = role === "admin";
-
-window.BT_AUTH = {
-    userId,
-    userEmail,
-    role,
-    isAdmin,
-    accessToken,
-    refreshToken
+const updateAuthFromStorage = () => {
+    const refreshToken = localStorage.getItem(STORAGE.refresh);
+    const accessToken = sessionStorage.getItem(STORAGE.access);
+    const userId = localStorage.getItem(STORAGE.user) || "(brak)";
+    const role = (localStorage.getItem(STORAGE.role) || "user").toLowerCase();
+    const userEmail = localStorage.getItem(STORAGE.email) || "(brak)";
+    const isAdmin = role === "admin";
+    window.BT_AUTH = {
+        userId,
+        userEmail,
+        role,
+        isAdmin,
+        accessToken,
+        refreshToken
+    };
 };
 
+updateAuthFromStorage();
+
 const requireAuth = () => {
-    if (!refreshToken) {
+    if (!window.BT_AUTH?.refreshToken) {
         sessionStorage.setItem("bt_login_notice", "Aby wejsc do panelu, zaloguj sie.");
         window.location.href = "/static/index.html";
         return false;
@@ -39,6 +41,7 @@ const requireAuth = () => {
 };
 
 const updateRoleLabels = () => {
+    const role = window.BT_AUTH?.role || "user";
     document.querySelectorAll("[data-role-label]").forEach((el) => {
         el.textContent = `Rola: ${role}`;
     });
@@ -46,6 +49,7 @@ const updateRoleLabels = () => {
 
 const updateNavState = () => {
     const page = document.body?.dataset?.page || "";
+    const isAdmin = Boolean(window.BT_AUTH?.isAdmin);
     document.querySelectorAll("[data-page-link]").forEach((link) => {
         const isActive = link.dataset.pageLink === page;
         link.classList.toggle("is-active", isActive);
@@ -63,7 +67,7 @@ const updateNavState = () => {
 
 const guardAdminPage = () => {
     const page = document.body?.dataset?.page || "";
-    if (page === "admin" && !isAdmin) {
+    if (page === "admin" && !window.BT_AUTH?.isAdmin) {
         sessionStorage.setItem("bt_login_notice", "Brak uprawnien administratora.");
         window.location.href = "/static/panel.html";
         return false;
@@ -78,51 +82,45 @@ const handleLogout = () => {
     localStorage.removeItem(STORAGE.email);
     localStorage.removeItem(STORAGE.lastLogin);
     sessionStorage.removeItem(STORAGE.access);
+    updateAuthFromStorage();
     window.location.href = "/static/index.html";
 };
 
-const request = async (url, payload) => {
-    const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
-
-    const data = await response.json().catch(() => null);
-    if (!response.ok) {
-        const message = data?.message || "Blad serwera.";
-        throw new Error(message);
-    }
-    return data;
-};
-
-const refreshAccessToken = async () => {
-    if (!refreshToken) {
-        return false;
-    }
-    try {
-        const response = await request("/auth/refresh", { refreshToken });
-        const nextAccess = response?.accessToken || null;
-        if (!nextAccess) {
-            throw new Error("Brak access tokenu w odpowiedzi.");
-        }
-        sessionStorage.setItem(STORAGE.access, nextAccess);
-        return true;
-    } catch (error) {
-        sessionStorage.setItem("bt_login_notice", "Sesja wygasla. Zaloguj sie ponownie.");
-        window.location.href = "/static/index.html";
-        return false;
-    }
-};
-
 const startSilentRefresh = async () => {
-    if (!refreshToken) {
+    if (!window.BT_AUTH?.refreshToken || !window.BT_API?.refreshAccessToken) {
         return;
     }
-    await refreshAccessToken();
+    await window.BT_API.refreshAccessToken();
+    updateAuthFromStorage();
     setInterval(() => {
-        refreshAccessToken();
+        window.BT_API.refreshAccessToken().then(() => updateAuthFromStorage());
     }, 600 * 1000);
+};
+
+const syncProfile = async () => {
+    if (!window.BT_API?.request) {
+        return;
+    }
+    try {
+        const me = await window.BT_API.request("GET", "/me");
+        if (me?.id) {
+            localStorage.setItem(STORAGE.user, String(me.id));
+        }
+        if (me?.email) {
+            localStorage.setItem(STORAGE.email, String(me.email));
+        }
+        if (me?.role) {
+            localStorage.setItem(STORAGE.role, String(me.role).toLowerCase());
+        }
+        updateAuthFromStorage();
+        updateRoleLabels();
+        updateNavState();
+    } catch (error) {
+        if (error?.message === "Unauthorized") {
+            sessionStorage.setItem("bt_login_notice", "Sesja wygasla. Zaloguj sie ponownie.");
+            handleLogout();
+        }
+    }
 };
 
 const bindLogout = () => {
@@ -138,4 +136,5 @@ if (requireAuth()) {
     updateNavState();
     bindLogout();
     startSilentRefresh();
+    syncProfile();
 }
