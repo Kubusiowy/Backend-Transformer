@@ -71,10 +71,81 @@
                 <div class="card__header">
                     <span class="card__eyebrow">Uzytkownicy</span>
                     <h2>Lista kont</h2>
-                    <p>Podglad i zarzadzanie uzytkownikami z bazy danych.</p>
+                    <p>Podglad, wyszukiwanie i wybieranie uzytkownikow do dalszych akcji.</p>
+                </div>
+                <div class="form">
+                    <label class="field">
+                        <span>Szukaj uzytkownika</span>
+                        <input type="search" id="userSearch" placeholder="Email lub ID">
+                    </label>
                 </div>
                 <div id="userList" class="list"></div>
-                <div id="userEmpty" class="empty">Brak uzytkownikow w pamieci.</div>
+                <div id="userEmpty" class="empty">Brak uzytkownikow.</div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Wybrany uzytkownik</span>
+                    <h2>Szczegoly konta</h2>
+                    <p>Po wyborze uzytkownika zobaczysz powiazane transformatory i metryki.</p>
+                </div>
+                <div class="detail" id="adminUserDetail">
+                    <div class="detail__row"><span>ID</span><strong id="detailUserId">(brak)</strong></div>
+                    <div class="detail__row"><span>Email</span><strong id="detailUserEmail">(brak)</strong></div>
+                    <div class="detail__row"><span>Rola</span><strong id="detailUserRole">(brak)</strong></div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Transformatory</span>
+                    <h2>Transformatory uzytkownika</h2>
+                    <p>Wybierz transformator, aby podejrzec metryki.</p>
+                </div>
+                <div id="adminTransformerList" class="list"></div>
+                <div id="adminTransformerEmpty" class="empty">Wybierz uzytkownika, aby wyswietlic transformatory.</div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Metryki</span>
+                    <h2>Dane pomiarowe transformatora</h2>
+                    <p>Wybierz transformator i klucz metryki, aby zobaczyc dane.</p>
+                </div>
+                <div class="metrics-filter">
+                    <label class="field">
+                        <span>Klucz pomiaru</span>
+                        <select id="adminMetricKeySelect"></select>
+                    </label>
+                    <label class="field">
+                        <span>Limit punktow</span>
+                        <input type="number" id="adminMetricLimit" min="10" max="5000" value="120">
+                    </label>
+                    <div class="metrics-filter__status" id="adminMetricsStatus">Brak transformatora</div>
+                </div>
+                <div class="metrics">
+                    <div class="metrics__row"><span>Srednia</span><strong id="adminMetricAvg">(brak)</strong></div>
+                    <div class="metrics__row"><span>Minimum</span><strong id="adminMetricMin">(brak)</strong></div>
+                    <div class="metrics__row"><span>Maksimum</span><strong id="adminMetricMax">(brak)</strong></div>
+                    <div class="metrics__row"><span>Ostatni bucket</span><strong id="adminMetricTime">(brak)</strong></div>
+                </div>
+                <div class="table-wrap" id="adminMetricsTableWrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Bucket</th>
+                                <th>Srednia</th>
+                                <th>Min</th>
+                                <th>Max</th>
+                                <th>Licznik</th>
+                                <th>Unit</th>
+                                <th>Etykieta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminMetricsTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="empty" id="adminMetricsEmpty">Brak danych metryk.</div>
             </section>
 
             <section class="card">
