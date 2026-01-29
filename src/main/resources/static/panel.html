@@ -23,14 +23,24 @@
     <header class="topbar">
         <div class="topbar__brand">Backend Transformer</div>
         <nav class="topbar__nav">
-            <a class="topbar__link" href="/static/index.html">Logowanie</a>
-            <button class="btn btn--ghost" id="logoutBtn" type="button">Wyloguj</button>
-            <button class="topbar__toggle" id="themeToggle" type="button" aria-pressed="false">Tryb: Jasny</button>
+            <div class="topbar__tabs" role="tablist" aria-label="Nawigacja panelu">
+                <button class="topbar__tab is-active" type="button" data-nav="dashboard" aria-pressed="true">Start</button>
+                <button class="topbar__tab" type="button" data-nav="transformers" aria-pressed="false">Transformatory</button>
+                <button class="topbar__tab" type="button" data-nav="meters" aria-pressed="false">Mierniki</button>
+                <button class="topbar__tab" type="button" data-nav="readings" aria-pressed="false">Odczyty</button>
+                <button class="topbar__tab" type="button" data-nav="admin" aria-pressed="false">Admin</button>
+            </div>
+            <div class="topbar__actions">
+                <span class="topbar__role" id="userRoleLabel">Rola: user</span>
+                <a class="topbar__link" href="/static/index.html">Logowanie</a>
+                <button class="btn btn--ghost" id="logoutBtn" type="button">Wyloguj</button>
+                <button class="topbar__toggle" id="themeToggle" type="button" aria-pressed="false">Tryb: Jasny</button>
+            </div>
         </nav>
     </header>
 
     <main class="page page--panel">
-        <section class="stack">
+        <section class="stack page-section is-active" data-page="dashboard">
             <section class="card">
                 <div class="card__header">
                     <span class="card__eyebrow">Proste kroki</span>
@@ -39,12 +49,41 @@
                 </div>
                 <ol class="steps">
                     <li>Wpisz dane transformatora i kliknij "Dodaj".</li>
-                    <li>Wybierz transformator z listy po prawej stronie.</li>
-                    <li>Kliknij "Odczytaj dane", aby zobaczyc przykladowe wyniki.</li>
+                    <li>Dodaj miernik z konfiguracja tak jak w bazie danych.</li>
+                    <li>Kliknij "Odczyty", aby zobaczyc przykladowe wyniki.</li>
                 </ol>
                 <div class="note">Uwaga: To wersja demo bez prawdziwych endpointow. Gdy podasz endpointy, podlacze realne dane.</div>
             </section>
 
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Podsumowanie</span>
+                    <h2>Stan biezacy</h2>
+                    <p>Podstawowe informacje o Twoich zasobach i uprawnieniach.</p>
+                </div>
+                <div class="meta">
+                    <div class="meta__item">
+                        <div class="meta__label">Transformatory</div>
+                        <div class="meta__value" id="statTransformers">0</div>
+                    </div>
+                    <div class="meta__item">
+                        <div class="meta__label">Mierniki</div>
+                        <div class="meta__value" id="statMeters">0</div>
+                    </div>
+                    <div class="meta__item">
+                        <div class="meta__label">Rejestry</div>
+                        <div class="meta__value" id="statRegisters">0</div>
+                    </div>
+                    <div class="meta__item">
+                        <div class="meta__label">Ostatni odczyt</div>
+                        <div class="meta__value" id="statLastRead">Brak</div>
+                    </div>
+                </div>
+                <div class="note" id="roleNote">Rola uzytkownika determinuje dostep do funkcji administracyjnych.</div>
+            </section>
+        </section>
+
+        <section class="stack page-section" data-page="transformers">
             <section class="card">
                 <div class="card__header">
                     <span class="card__eyebrow">Transformatory</span>
@@ -89,13 +128,169 @@
                 <div class="card__header">
                     <span class="card__eyebrow">Lista</span>
                     <h2>Twoje transformatory</h2>
-                    <p>Kliknij "Wybierz", aby zobaczyc szczegoly i odczytac dane.</p>
+                    <p>Kliknij "Wybierz", aby przejsc do miernikow i odczytow.</p>
                 </div>
 
                 <div id="transformerList" class="list"></div>
                 <div id="transformerEmpty" class="empty">Brak transformatorow. Dodaj pierwszy wpis powyzej.</div>
             </section>
+        </section>
 
+        <section class="stack page-section" data-page="meters">
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Mierniki</span>
+                    <h2>Dodaj miernik</h2>
+                    <p>Konfiguracja zgodna z tabela <em>meter</em> w bazie danych.</p>
+                </div>
+                <div class="note" id="meterContext">Wybierz transformator, aby dodac miernik.</div>
+
+                <form id="addMeterForm" class="form form--two" novalidate>
+                    <label class="field">
+                        <span>Nazwa *</span>
+                        <input type="text" name="name" placeholder="np. Miernik glowny" required>
+                    </label>
+                    <label class="field">
+                        <span>Device code *</span>
+                        <input type="text" name="deviceCode" placeholder="np. MTR-001" required>
+                    </label>
+                    <label class="field">
+                        <span>Port szeregowy *</span>
+                        <input type="text" name="serialPort" placeholder="np. /dev/ttyUSB0" required>
+                    </label>
+                    <label class="field">
+                        <span>Baud rate *</span>
+                        <input type="number" name="baudRate" min="300" step="300" value="9600" required>
+                    </label>
+                    <label class="field">
+                        <span>Parity</span>
+                        <select name="parity">
+                            <option value="NONE" selected>NONE</option>
+                            <option value="EVEN">EVEN</option>
+                            <option value="ODD">ODD</option>
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Stop bits</span>
+                        <select name="stopBits">
+                            <option value="1" selected>1</option>
+                            <option value="2">2</option>
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Slave ID *</span>
+                        <input type="number" name="slaveId" min="1" max="247" value="1" required>
+                    </label>
+                    <label class="field">
+                        <span>Poll interval (ms)</span>
+                        <input type="number" name="pollIntervalMs" min="250" step="250" value="1000" required>
+                    </label>
+                    <label class="field field--full">
+                        <span>Aktywny</span>
+                        <select name="enabled">
+                            <option value="1" selected>Tak</option>
+                            <option value="0">Nie</option>
+                        </select>
+                    </label>
+                    <div class="form__actions field--full">
+                        <button class="btn" type="submit">Dodaj miernik</button>
+                    </div>
+                </form>
+
+                <div class="result" id="meterResult">
+                    <div class="result__title">Status</div>
+                    <div class="result__body" id="meterResultBody">Brak miernikow.</div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Lista</span>
+                    <h2>Mierniki transformatora</h2>
+                    <p>Wybierz miernik, aby dodac rejestry i odczyty.</p>
+                </div>
+                <div id="meterList" class="list"></div>
+                <div id="meterEmpty" class="empty">Brak miernikow. Dodaj pierwszy wpis powyzej.</div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Rejestry</span>
+                    <h2>Dodaj rejestr miernika</h2>
+                    <p>Konfiguracja zgodna z tabela <em>meter_register</em> w bazie danych.</p>
+                </div>
+                <div class="note" id="registerContext">Wybierz miernik, aby dodac rejestr.</div>
+
+                <div class="detail" id="selectedMeterDetail">
+                    <div class="detail__row"><span>Nazwa</span><strong id="detailMeterName">(brak)</strong></div>
+                    <div class="detail__row"><span>Device code</span><strong id="detailMeterDevice">(brak)</strong></div>
+                    <div class="detail__row"><span>Port</span><strong id="detailMeterPort">(brak)</strong></div>
+                    <div class="detail__row"><span>Slave ID</span><strong id="detailMeterSlave">(brak)</strong></div>
+                </div>
+
+                <form id="addRegisterForm" class="form form--two" novalidate>
+                    <label class="field">
+                        <span>Nazwa *</span>
+                        <input type="text" name="name" placeholder="np. Napiecie L1" required>
+                    </label>
+                    <label class="field">
+                        <span>Typ rejestru</span>
+                        <select name="registerType">
+                            <option value="INPUT" selected>INPUT</option>
+                            <option value="HOLDING">HOLDING</option>
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Adres</span>
+                        <input type="number" name="address" min="0" value="0" required>
+                    </label>
+                    <label class="field">
+                        <span>Dlugosc</span>
+                        <input type="number" name="length" min="1" value="2" required>
+                    </label>
+                    <label class="field">
+                        <span>Typ danych</span>
+                        <select name="dataType">
+                            <option value="INT16">INT16</option>
+                            <option value="INT32">INT32</option>
+                            <option value="FLOAT32" selected>FLOAT32</option>
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Skala</span>
+                        <input type="number" name="scale" step="0.01" value="1" required>
+                    </label>
+                    <label class="field">
+                        <span>Jednostka</span>
+                        <input type="text" name="unit" placeholder="np. kV">
+                    </label>
+                    <label class="field">
+                        <span>Kolejnosc</span>
+                        <input type="number" name="orderIndex" min="0" value="0" required>
+                    </label>
+                    <label class="field field--full">
+                        <span>Aktywny</span>
+                        <select name="enabled">
+                            <option value="1" selected>Tak</option>
+                            <option value="0">Nie</option>
+                        </select>
+                    </label>
+                    <div class="form__actions field--full">
+                        <button class="btn" type="submit">Dodaj rejestr</button>
+                    </div>
+                </form>
+
+                <div class="result" id="registerResult">
+                    <div class="result__title">Status</div>
+                    <div class="result__body" id="registerResultBody">Brak rejestrow.</div>
+                </div>
+
+                <div id="registerList" class="list"></div>
+                <div id="registerEmpty" class="empty">Brak rejestrow. Dodaj pierwszy wpis powyzej.</div>
+            </section>
+        </section>
+
+        <section class="stack page-section" data-page="readings">
             <section class="card">
                 <div class="card__header">
                     <span class="card__eyebrow">Odczyt</span>
@@ -122,6 +317,39 @@
                     <div class="controls__row">
                         <button class="btn" id="readNow" type="button">Odczytaj dane</button>
                         <button class="btn btn--ghost" id="deleteSelected" type="button">Usun zaznaczony</button>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        <section class="stack page-section" data-page="admin">
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Administracja</span>
+                    <h2>Centrum zarzadzania</h2>
+                    <p>Panel administracyjny jest dostepny tylko dla roli <strong>admin</strong>.</p>
+                </div>
+                <div class="note" id="adminNotice">Sprawdzam uprawnienia...</div>
+
+                <div class="meta" id="adminStats">
+                    <div class="meta__item">
+                        <div class="meta__label">Transformatory</div>
+                        <div class="meta__value" id="adminTransformers">0</div>
+                    </div>
+                    <div class="meta__item">
+                        <div class="meta__label">Mierniki</div>
+                        <div class="meta__value" id="adminMeters">0</div>
+                    </div>
+                    <div class="meta__item">
+                        <div class="meta__label">Rejestry</div>
+                        <div class="meta__value" id="adminRegisters">0</div>
+                    </div>
+                </div>
+
+                <div class="controls admin-only" id="adminActions">
+                    <div class="controls__row">
+                        <button class="btn" id="adminSeed" type="button">Wczytaj dane demo</button>
+                        <button class="btn btn--ghost" id="adminWipe" type="button">Wyczysc wszystkie dane</button>
                     </div>
                 </div>
             </section>

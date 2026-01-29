@@ -5,7 +5,7 @@ import com.example.core.config.loadConfigJWT
 import com.example.core.config.loadConfigMampDB
 import com.example.core.util.passHash.Hasher
 import com.example.core.util.passHash.HasherIMPL
-import com.example.features.common.AuthRepository
+import com.example.features.auth.common.AuthRepository
 import com.example.features.auth.login.domain.LoginService
 import com.example.features.auth.refresh.domain.RefreshService
 import com.example.features.auth.register.domain.RegisterService

@@ -1,4 +1,4 @@
-package com.example.features.common.mappers
+package com.example.features.auth.common.mappers
 
 import com.example.core.db.exposedTables.Users
 import com.example.core.model.user.User

@@ -1,7 +1,7 @@
 package com.example.features.auth.register.domain
 
 import com.example.core.util.passHash.Hasher
-import com.example.features.common.AuthRepository
+import com.example.features.auth.common.AuthRepository
 import com.example.features.auth.register.domain.DTO.request.RegisterRequest
 import com.example.features.auth.register.domain.DTO.request.toUserModel
 import com.example.plugins.StatusPage.errors.BadRequest

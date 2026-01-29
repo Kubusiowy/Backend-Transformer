@@ -1,7 +1,7 @@
 package com.example.features.auth.refresh.domain
 
 import com.example.core.util.passHash.Hasher
-import com.example.features.common.AuthRepository
+import com.example.features.auth.common.AuthRepository
 import com.example.features.auth.refresh.domain.DTO.request.RefreshRequest
 import com.example.features.auth.refresh.domain.DTO.response.RefreshResponse
 import com.example.plugins.Security.JwtService
