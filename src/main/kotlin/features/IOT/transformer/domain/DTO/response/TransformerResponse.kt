@@ -7,5 +7,8 @@ import java.util.UUID
 data class TransformerResponse (
     @Serializable(with = UUIDSerializer::class)
     val id: UUID,
-    val name: String
+    @Serializable(with = UUIDSerializer::class)
+    val userId: UUID,
+    val name: String,
+    val location: String? = null
     )

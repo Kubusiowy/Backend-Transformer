@@ -9,6 +9,8 @@ import com.example.features.auth.common.AuthRepository
 import com.example.features.auth.login.domain.LoginService
 import com.example.features.auth.refresh.domain.RefreshService
 import com.example.features.auth.register.domain.RegisterService
+import com.example.features.IOT.meter.data.MeterRepository
+import com.example.features.IOT.transformer.data.TransformerRepository
 import com.example.plugins.Security.JwtService
 import com.example.plugins.Security.JwtServiceImpl
 import org.koin.dsl.module
@@ -30,4 +32,9 @@ val AuthModule = module {
     single { LoginService(get(), get(),get()) }
 
     single { RefreshService(get(), get(), get()) }
+}
+
+val IotModule = module {
+    single { TransformerRepository() }
+    single { MeterRepository() }
 }

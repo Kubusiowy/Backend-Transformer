@@ -2,6 +2,9 @@ package com.example.plugins
 
 import com.example.WebApp.routing.webRoutes
 import com.example.features.IOT.transformer.route.transformerRoute
+import com.example.features.IOT.meter.route.meterRoute
+import com.example.features.admin.route.adminRoute
+import com.example.features.auth.profile.route.profileRoute
 import com.example.features.auth.login.route.loginRoute
 import com.example.features.auth.refresh.route.refreshRoutes
 import com.example.features.auth.register.route.registerRoute
@@ -25,6 +28,9 @@ fun Application.configureRouting() {
 
         authenticate("auth-jwt") {
             transformerRoute()
+            meterRoute()
+            adminRoute()
+            profileRoute()
         }
 
     }

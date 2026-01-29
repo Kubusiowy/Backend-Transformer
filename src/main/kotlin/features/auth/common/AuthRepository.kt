@@ -57,6 +57,10 @@ class AuthRepository {
                 ?.toUser()
         }
 
+        suspend fun listUsers(): List<User> = dbQuery {
+            Users.selectAll().map { it.toUser() }
+        }
+
         suspend fun findActiveRefreshTokenHashesByUserId(userId: String): List<String> = dbQuery {
             RefreshSessions
                 .selectAll()
