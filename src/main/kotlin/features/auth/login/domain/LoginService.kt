@@ -1,13 +1,12 @@
 package com.example.features.auth.login.domain
 
 import com.example.core.util.passHash.Hasher
-import com.example.features.auth.common.AuthRepository
+import com.example.features.common.AuthRepository
 import com.example.features.auth.login.domain.DTO.request.LoginRequest
 import com.example.features.auth.login.domain.DTO.response.LoginResponse
 import com.example.plugins.Security.JwtService
 import com.example.plugins.StatusPage.errors.BadRequest
 import java.time.LocalDateTime
-import java.time.LocalTime
 
 class LoginService(
     private val repo: AuthRepository,

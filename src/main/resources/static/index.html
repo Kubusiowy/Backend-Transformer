@@ -3,14 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Bezpieczne logowanie do panelu Backend Transformer. Nowoczesny panel do zarzadzania transformatorami i danymi technicznymi.">
+    <meta name="keywords" content="backend transformer, panel, transformatory, zarzadzanie, logowanie, energia">
+    <meta name="author" content="Backend Transformer">
+    <meta name="application-name" content="Backend Transformer">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#1d4ed8">
+    <meta name="color-scheme" content="light dark">
+    <meta property="og:title" content="Backend Transformer - Logowanie">
+    <meta property="og:description" content="Bezpieczne logowanie do panelu Backend Transformer. Zarzadzaj danymi transformatorow w jednym miejscu.">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pl_PL">
+    <meta property="og:site_name" content="Backend Transformer">
+    <meta name="twitter:card" content="summary">
     <title>Logowanie - Backend Transformer</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="theme-light">
     <header class="topbar">
         <div class="topbar__brand">Backend Transformer</div>
         <nav class="topbar__nav">
             <a class="topbar__link" href="/static/panel.html">Panel</a>
+            <button class="topbar__toggle" id="themeToggle" type="button" aria-pressed="false">Tryb: Jasny</button>
         </nav>
     </header>
 
@@ -77,6 +91,43 @@
         </section>
     </main>
 
+    <div class="cookie-banner" id="cookieBanner" role="dialog" aria-live="polite" aria-label="Informacja o cookies" aria-hidden="true">
+        <div>
+            <div class="cookie-banner__title">Cookies</div>
+            <p>Uzywamy niezbednych cookies do logowania i bezpiecznej pracy panelu. Mozesz zaakceptowac lub odrzucic pliki opcjonalne.</p>
+        </div>
+        <div class="cookie-banner__actions">
+            <button class="btn btn--ghost" id="cookieReject" type="button">Odrzucam</button>
+            <button class="btn" id="cookieAccept" type="button">Akceptuje</button>
+        </div>
+    </div>
+
+    <button class="a11y-fab" id="a11yToggle" type="button" aria-expanded="false" aria-controls="a11yPanel">Dostepnosc</button>
+    <aside class="a11y-panel" id="a11yPanel" role="dialog" aria-label="Ustawienia dostepnosci">
+        <div class="a11y-panel__header">
+            <div class="a11y-panel__title">Dostepnosc</div>
+            <button class="a11y-close" id="a11yClose" type="button" aria-label="Zamknij panel">Zamknij</button>
+        </div>
+        <div class="a11y-option">
+            <span>Rozmiar tekstu</span>
+            <div class="a11y-buttons">
+                <button class="a11y-chip" type="button" data-a11y-text="0" aria-pressed="true">Standard</button>
+                <button class="a11y-chip" type="button" data-a11y-text="1" aria-pressed="false">Duzy</button>
+                <button class="a11y-chip" type="button" data-a11y-text="2" aria-pressed="false">Bardzo duzy</button>
+            </div>
+        </div>
+        <div class="a11y-option">
+            <button class="a11y-toggle" type="button" data-a11y-toggle="contrast" aria-pressed="false">Wysoki kontrast</button>
+            <button class="a11y-toggle" type="button" data-a11y-toggle="reduceMotion" aria-pressed="false">Zredukuj animacje</button>
+            <button class="a11y-toggle" type="button" data-a11y-toggle="underline" aria-pressed="false">Podkresl linki</button>
+        </div>
+        <div class="a11y-option a11y-option--privacy">
+            <span>Prywatnosc</span>
+            <button class="a11y-toggle" id="cookieManage" type="button">Ustawienia cookies</button>
+        </div>
+    </aside>
+
+    <script src="ui.js"></script>
     <script src="login.js"></script>
 </body>
 </html>

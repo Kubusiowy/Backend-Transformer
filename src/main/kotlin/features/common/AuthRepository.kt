@@ -1,13 +1,12 @@
-package com.example.features.auth.common
+package com.example.features.common
 
 import com.example.core.db.dbQuery
 import com.example.core.db.exposedTables.RefreshSessions
 import com.example.core.db.exposedTables.Users
 import com.example.core.model.user.Role.UserRole
 import com.example.core.model.user.User
-import com.example.features.auth.common.mappers.toUser
+import com.example.features.common.mappers.toUser
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
