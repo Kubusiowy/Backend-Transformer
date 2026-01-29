@@ -3,23 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Panel Backend Transformer do zarzadzania transformatorami, danymi technicznymi i odczytami.">
-    <meta name="keywords" content="backend transformer, panel, transformatory, zarzadzanie, odczyty">
+    <meta name="description" content="Odczyty i szczegoly transformatorow w panelu Backend Transformer.">
+    <meta name="keywords" content="odczyty, transformatory, panel, backend transformer">
     <meta name="author" content="Backend Transformer">
     <meta name="application-name" content="Backend Transformer">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#1d4ed8">
     <meta name="color-scheme" content="light dark">
-    <meta property="og:title" content="Backend Transformer - Panel">
-    <meta property="og:description" content="Nowoczesny panel do zarzadzania transformatorami i odczytami.">
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="pl_PL">
-    <meta property="og:site_name" content="Backend Transformer">
-    <meta name="twitter:card" content="summary">
-    <title>Panel startowy - Backend Transformer</title>
+    <title>Odczyty - Backend Transformer</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="theme-light" data-page="dashboard">
+<body class="theme-light" data-page="readings">
     <header class="topbar">
         <div class="topbar__brand">Backend Transformer</div>
         <nav class="topbar__nav">
@@ -44,43 +38,37 @@
         <section class="stack">
             <section class="card">
                 <div class="card__header">
-                    <span class="card__eyebrow">Proste kroki</span>
-                    <h2>Jak korzystac z panelu</h2>
-                    <p>Panel jest podzielony na osobne podstrony. Zacznij od dodania transformatora, a nastepnie uzupelnij mierniki i rejestry.</p>
+                    <span class="card__eyebrow">Odczyt</span>
+                    <h2>Wybrany transformator</h2>
+                    <p>Wybierz pozycje z listy w sekcji Transformatory. Dane ponizej to przykladowy odczyt (demo).</p>
                 </div>
-                <ol class="steps">
-                    <li>Wejdz w "Transformatory" i dodaj nowy wpis.</li>
-                    <li>W "Mierniki" skonfiguruj mierniki i rejestry.</li>
-                    <li>W "Odczyty" sprawdz przykladowe dane.</li>
-                </ol>
-                <div class="note">Uwaga: To wersja demo bez prawdziwych endpointow. Gdy podasz endpointy, podlacze realne dane.</div>
-            </section>
 
-            <section class="card">
-                <div class="card__header">
-                    <span class="card__eyebrow">Podsumowanie</span>
-                    <h2>Stan biezacy</h2>
-                    <p>Podstawowe informacje o Twoich zasobach i uprawnieniach.</p>
+                <div class="detail" id="selectedDetail">
+                    <div class="detail__row"><span>Nazwa</span><strong id="detailName">(brak)</strong></div>
+                    <div class="detail__row"><span>Lokalizacja</span><strong id="detailLocation">(brak)</strong></div>
+                    <div class="detail__row"><span>Numer seryjny</span><strong id="detailSerial">(brak)</strong></div>
+                    <div class="detail__row"><span>Moc</span><strong id="detailPower">(brak)</strong></div>
+                    <div class="detail__row"><span>Notatka</span><strong id="detailNote">(brak)</strong></div>
                 </div>
-                <div class="meta">
-                    <div class="meta__item">
-                        <div class="meta__label">Transformatory</div>
-                        <div class="meta__value" id="statTransformers">0</div>
-                    </div>
-                    <div class="meta__item">
-                        <div class="meta__label">Mierniki</div>
-                        <div class="meta__value" id="statMeters">0</div>
-                    </div>
-                    <div class="meta__item">
-                        <div class="meta__label">Rejestry</div>
-                        <div class="meta__value" id="statRegisters">0</div>
-                    </div>
-                    <div class="meta__item">
-                        <div class="meta__label">Ostatni odczyt</div>
-                        <div class="meta__value" id="statLastRead">Brak</div>
+
+                <div class="metrics" id="metricsBox">
+                    <div class="metrics__row"><span>Napiecie</span><strong id="metricVoltage">(brak)</strong></div>
+                    <div class="metrics__row"><span>Temperatura</span><strong id="metricTemp">(brak)</strong></div>
+                    <div class="metrics__row"><span>Obciazenie</span><strong id="metricLoad">(brak)</strong></div>
+                    <div class="metrics__row"><span>Ostatni odczyt</span><strong id="metricTime">(brak)</strong></div>
+                </div>
+
+                <div class="controls">
+                    <div class="controls__row">
+                        <button class="btn" id="readNow" type="button">Odczytaj dane</button>
+                        <button class="btn btn--ghost" id="deleteSelected" type="button">Usun zaznaczony</button>
                     </div>
                 </div>
-                <div class="note" id="roleNote">Rola uzytkownika determinuje dostep do funkcji administracyjnych.</div>
+
+                <div class="result" id="transformerResult">
+                    <div class="result__title">Status</div>
+                    <div class="result__body" id="transformerResultBody">Czekam na dane.</div>
+                </div>
             </section>
         </section>
     </main>
@@ -124,6 +112,6 @@
     <script src="ui.js"></script>
     <script src="panel-common.js"></script>
     <script src="panel-data.js"></script>
-    <script src="dashboard.js"></script>
+    <script src="readings.js"></script>
 </body>
 </html>

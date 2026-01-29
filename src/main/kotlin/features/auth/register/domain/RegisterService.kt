@@ -1,5 +1,7 @@
 package com.example.features.auth.register.domain
 
+import com.example.core.model.user.Role.UserRole
+import com.example.core.model.user.User
 import com.example.core.util.passHash.Hasher
 import com.example.features.auth.common.AuthRepository
 import com.example.features.auth.register.domain.DTO.request.RegisterRequest

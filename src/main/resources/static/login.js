@@ -11,7 +11,10 @@ const switchButtons = document.querySelectorAll(".switch__btn");
 const STORAGE = {
     refresh: "bt_refresh_token",
     access: "bt_access_token",
-    user: "bt_user_id"
+    user: "bt_user_id",
+    role: "bt_role",
+    email: "bt_user_email",
+    lastLogin: "bt_last_login"
 };
 
 let mode = "login";
@@ -62,10 +65,22 @@ const request = async (url, payload) => {
     return data;
 };
 
-const saveTokens = (loginResult) => {
+const saveTokens = (loginResult, email) => {
     const access = loginResult?.accessToken || null;
     const refresh = loginResult?.refreshToken || null;
     const userId = loginResult?.id || null;
+    const role =
+        loginResult?.role ||
+        loginResult?.userRole ||
+        loginResult?.accountRole ||
+        loginResult?.permissions?.role ||
+        "user";
+    const resolvedEmail =
+        loginResult?.email ||
+        loginResult?.user?.email ||
+        loginResult?.account?.email ||
+        email ||
+        "";
 
     if (refresh) {
         localStorage.setItem(STORAGE.refresh, refresh);
@@ -75,6 +90,35 @@ const saveTokens = (loginResult) => {
     }
     if (userId) {
         localStorage.setItem(STORAGE.user, userId);
+    }
+    const roleValue = String(role || "user").toLowerCase();
+    localStorage.setItem(STORAGE.role, roleValue);
+    if (resolvedEmail) {
+        localStorage.setItem(STORAGE.email, resolvedEmail);
+    }
+    localStorage.setItem(STORAGE.lastLogin, new Date().toISOString());
+
+    if (userId) {
+        const usersKey = "bt_users";
+        let users = [];
+        try {
+            users = JSON.parse(localStorage.getItem(usersKey) || "[]");
+        } catch (error) {
+            users = [];
+        }
+        const existing = users.find((user) => user.id === String(userId));
+        const entry = {
+            id: String(userId),
+            email: resolvedEmail || "(brak)",
+            role: roleValue,
+            lastLogin: new Date().toISOString()
+        };
+        if (existing) {
+            Object.assign(existing, entry);
+        } else {
+            users.push(entry);
+        }
+        localStorage.setItem(usersKey, JSON.stringify(users));
     }
 };
 
@@ -112,7 +156,7 @@ form.addEventListener("submit", async (event) => {
 
         const loginPayload = { email, rawPassword: password };
         const loginResult = await request("/auth/login", loginPayload);
-        saveTokens(loginResult);
+        saveTokens(loginResult, email);
 
         setResult("Zalogowano. Przekierowuje do panelu...", "result--success");
         window.location.href = "/static/panel.html";

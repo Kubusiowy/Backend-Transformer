@@ -138,6 +138,21 @@ const setRegisterResult = (message, state) => {
     }
 };
 
+const requireAdmin = (message, target) => {
+    if (!isAdmin) {
+        const notice = message || "Brak uprawnien administratora.";
+        if (target === "meter") {
+            setMeterResult(notice, "result--error");
+        } else if (target === "register") {
+            setRegisterResult(notice, "result--error");
+        } else {
+            setTransformerResult(notice, "result--error");
+        }
+        return false;
+    }
+    return true;
+};
+
 const request = async (url, payload) => {
     const response = await fetch(url, {
         method: "POST",
@@ -327,7 +342,12 @@ const renderTransformers = () => {
         deleteBtn.type = "button";
         deleteBtn.className = "btn btn--ghost btn--small";
         deleteBtn.textContent = "Usun";
-        deleteBtn.addEventListener("click", () => removeTransformer(transformer.id));
+        if (!isAdmin) {
+            deleteBtn.classList.add("btn--disabled");
+            deleteBtn.disabled = true;
+        } else {
+            deleteBtn.addEventListener("click", () => removeTransformer(transformer.id));
+        }
 
         actions.append(selectBtn, deleteBtn);
         item.append(main, actions);
@@ -404,6 +424,9 @@ const readMetrics = () => {
 };
 
 const removeTransformer = (id) => {
+    if (!requireAdmin("Brak uprawnien do usuwania transformatorow.")) {
+        return;
+    }
     const selected = transformers.find((t) => t.id === id);
     transformers = transformers.filter((t) => t.id !== id);
     if (selectedId === id) {
@@ -542,9 +565,11 @@ const renderMeters = () => {
     }
 
     if (meterContext) {
-        meterContext.textContent = `Dodajesz miernik do: ${selected.name}`;
+        meterContext.textContent = isAdmin
+            ? `Dodajesz miernik do: ${selected.name}`
+            : "Brak uprawnien admina do dodawania miernikow.";
     }
-    setFormEnabled(meterForm, true);
+    setFormEnabled(meterForm, Boolean(selected) && isAdmin);
 
     if (!meters.length) {
         meterEmpty.textContent = "Brak miernikow. Dodaj pierwszy wpis powyzej.";
@@ -600,7 +625,12 @@ const renderMeters = () => {
         deleteBtn.type = "button";
         deleteBtn.className = "btn btn--ghost btn--small";
         deleteBtn.textContent = "Usun";
-        deleteBtn.addEventListener("click", () => removeMeter(meter.id));
+        if (!isAdmin) {
+            deleteBtn.classList.add("btn--disabled");
+            deleteBtn.disabled = true;
+        } else {
+            deleteBtn.addEventListener("click", () => removeMeter(meter.id));
+        }
 
         actions.append(selectBtn, deleteBtn);
         item.append(main, actions);
@@ -612,6 +642,9 @@ const renderMeters = () => {
 };
 
 const removeMeter = (id) => {
+    if (!requireAdmin("Brak uprawnien do usuwania miernikow.", "meter")) {
+        return;
+    }
     const selected = getSelected();
     if (!selected) {
         return;
@@ -644,9 +677,11 @@ const renderRegisters = () => {
     }
 
     if (registerContext) {
-        registerContext.textContent = `Dodajesz rejestr do: ${meter.name}`;
+        registerContext.textContent = isAdmin
+            ? `Dodajesz rejestr do: ${meter.name}`
+            : "Brak uprawnien admina do dodawania rejestrow.";
     }
-    setFormEnabled(registerForm, true);
+    setFormEnabled(registerForm, Boolean(meter) && isAdmin);
 
     if (!meter.registers?.length) {
         registerEmpty.style.display = "block";
@@ -692,7 +727,12 @@ const renderRegisters = () => {
         deleteBtn.type = "button";
         deleteBtn.className = "btn btn--ghost btn--small";
         deleteBtn.textContent = "Usun";
-        deleteBtn.addEventListener("click", () => removeRegister(register.id));
+        if (!isAdmin) {
+            deleteBtn.classList.add("btn--disabled");
+            deleteBtn.disabled = true;
+        } else {
+            deleteBtn.addEventListener("click", () => removeRegister(register.id));
+        }
 
         actions.append(deleteBtn);
         item.append(main, actions);
@@ -703,6 +743,9 @@ const renderRegisters = () => {
 };
 
 const removeRegister = (id) => {
+    if (!requireAdmin("Brak uprawnien do usuwania rejestrow.", "register")) {
+        return;
+    }
     const meter = getSelectedMeter();
     if (!meter) {
         return;
@@ -715,6 +758,10 @@ const removeRegister = (id) => {
 
 addForm.addEventListener("submit", (event) => {
     event.preventDefault();
+    if (!requireAdmin("Brak uprawnien do dodawania transformatorow.")) {
+        return;
+    }
+
     const formData = new FormData(addForm);
     const name = String(formData.get("name") || "").trim();
     const location = String(formData.get("location") || "").trim();
@@ -733,6 +780,10 @@ addForm.addEventListener("submit", (event) => {
 
 meterForm.addEventListener("submit", (event) => {
     event.preventDefault();
+    if (!requireAdmin("Brak uprawnien do dodawania miernikow.", "meter")) {
+        return;
+    }
+
     const selected = getSelected();
     if (!selected) {
         setMeterResult("Najpierw wybierz transformator.", "result--error");
@@ -786,6 +837,10 @@ meterForm.addEventListener("submit", (event) => {
 
 registerForm.addEventListener("submit", (event) => {
     event.preventDefault();
+    if (!requireAdmin("Brak uprawnien do dodawania rejestrow.", "register")) {
+        return;
+    }
+
     const meter = getSelectedMeter();
     if (!meter) {
         setRegisterResult("Najpierw wybierz miernik.", "result--error");
@@ -836,6 +891,9 @@ registerForm.addEventListener("submit", (event) => {
 });
 
 seedSamplesBtn.addEventListener("click", () => {
+    if (!requireAdmin("Brak uprawnien do wczytania danych demo.")) {
+        return;
+    }
     if (transformers.length) {
         setTransformerResult("Lista nie jest pusta. Dodaj recznie lub usun istniejece.", "result--error");
         return;
@@ -913,6 +971,9 @@ seedSamplesBtn.addEventListener("click", () => {
 readNowBtn.addEventListener("click", () => readMetrics());
 
 deleteSelectedBtn.addEventListener("click", () => {
+    if (!requireAdmin("Brak uprawnien do usuwania transformatorow.")) {
+        return;
+    }
     const selected = getSelected();
     if (!selected) {
         setTransformerResult("Brak zaznaczonego transformatora.", "result--error");
@@ -978,12 +1039,22 @@ const initRole = () => {
     if (adminActions) {
         adminActions.style.display = isAdmin ? "grid" : "none";
     }
+
+    setFormEnabled(addForm, isAdmin);
+    if (seedSamplesBtn) {
+        seedSamplesBtn.disabled = !isAdmin;
+        seedSamplesBtn.classList.toggle("btn--disabled", !isAdmin);
+    }
+    if (deleteSelectedBtn) {
+        deleteSelectedBtn.disabled = !isAdmin;
+        deleteSelectedBtn.classList.toggle("btn--disabled", !isAdmin);
+    }
 };
 
-const initialPage = sessionStorage.getItem("bt_panel_page") || "dashboard";
-setPage(initialPage);
-
 initRole();
+const initialPage = sessionStorage.getItem("bt_panel_page") || "dashboard";
+const safePage = initialPage == "admin" && !isAdmin ? "dashboard" : initialPage;
+setPage(safePage);
 loadTransformers();
 renderTransformers();
 updateSelectedDetail();

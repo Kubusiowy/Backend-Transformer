@@ -3,23 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Panel Backend Transformer do zarzadzania transformatorami, danymi technicznymi i odczytami.">
-    <meta name="keywords" content="backend transformer, panel, transformatory, zarzadzanie, odczyty">
+    <meta name="description" content="Zarzadzanie transformatorami w panelu Backend Transformer.">
+    <meta name="keywords" content="transformator, panel, zarzadzanie, backend transformer">
     <meta name="author" content="Backend Transformer">
     <meta name="application-name" content="Backend Transformer">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#1d4ed8">
     <meta name="color-scheme" content="light dark">
-    <meta property="og:title" content="Backend Transformer - Panel">
-    <meta property="og:description" content="Nowoczesny panel do zarzadzania transformatorami i odczytami.">
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="pl_PL">
-    <meta property="og:site_name" content="Backend Transformer">
-    <meta name="twitter:card" content="summary">
-    <title>Panel startowy - Backend Transformer</title>
+    <title>Transformatory - Backend Transformer</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="theme-light" data-page="dashboard">
+<body class="theme-light" data-page="transformers">
     <header class="topbar">
         <div class="topbar__brand">Backend Transformer</div>
         <nav class="topbar__nav">
@@ -44,43 +38,53 @@
         <section class="stack">
             <section class="card">
                 <div class="card__header">
-                    <span class="card__eyebrow">Proste kroki</span>
-                    <h2>Jak korzystac z panelu</h2>
-                    <p>Panel jest podzielony na osobne podstrony. Zacznij od dodania transformatora, a nastepnie uzupelnij mierniki i rejestry.</p>
+                    <span class="card__eyebrow">Transformatory</span>
+                    <h2>Dodaj nowy transformator</h2>
+                    <p>Wypelnij formularz prostymi informacjami. Pola z gwiazdka sa wymagane.</p>
                 </div>
-                <ol class="steps">
-                    <li>Wejdz w "Transformatory" i dodaj nowy wpis.</li>
-                    <li>W "Mierniki" skonfiguruj mierniki i rejestry.</li>
-                    <li>W "Odczyty" sprawdz przykladowe dane.</li>
-                </ol>
-                <div class="note">Uwaga: To wersja demo bez prawdziwych endpointow. Gdy podasz endpointy, podlacze realne dane.</div>
+
+                <form id="addTransformerForm" class="form form--two" novalidate>
+                    <label class="field">
+                        <span>Nazwa *</span>
+                        <input type="text" name="name" placeholder="np. Stacja Pn-12" required>
+                    </label>
+                    <label class="field">
+                        <span>Lokalizacja</span>
+                        <input type="text" name="location" placeholder="np. Warszawa, ul. Przemyslowa 8">
+                    </label>
+                    <label class="field">
+                        <span>Numer seryjny</span>
+                        <input type="text" name="serial" placeholder="np. TR-2025-0001">
+                    </label>
+                    <label class="field">
+                        <span>Moc (kVA)</span>
+                        <input type="number" name="power" min="1" placeholder="np. 630">
+                    </label>
+                    <label class="field field--full">
+                        <span>Notatka</span>
+                        <input type="text" name="note" placeholder="np. Nowy transformator do odbioru">
+                    </label>
+                    <div class="form__actions field--full">
+                        <button class="btn" type="submit">Dodaj transformator</button>
+                        <button class="btn btn--ghost" id="seedSamples" type="button">Wczytaj przykladowe dane</button>
+                    </div>
+                </form>
+
+                <div class="result" id="transformerResult">
+                    <div class="result__title">Status</div>
+                    <div class="result__body" id="transformerResultBody">Czekam na dane.</div>
+                </div>
             </section>
 
             <section class="card">
                 <div class="card__header">
-                    <span class="card__eyebrow">Podsumowanie</span>
-                    <h2>Stan biezacy</h2>
-                    <p>Podstawowe informacje o Twoich zasobach i uprawnieniach.</p>
+                    <span class="card__eyebrow">Lista</span>
+                    <h2>Twoje transformatory</h2>
+                    <p>Kliknij "Wybierz", aby ustawic aktywny transformator.</p>
                 </div>
-                <div class="meta">
-                    <div class="meta__item">
-                        <div class="meta__label">Transformatory</div>
-                        <div class="meta__value" id="statTransformers">0</div>
-                    </div>
-                    <div class="meta__item">
-                        <div class="meta__label">Mierniki</div>
-                        <div class="meta__value" id="statMeters">0</div>
-                    </div>
-                    <div class="meta__item">
-                        <div class="meta__label">Rejestry</div>
-                        <div class="meta__value" id="statRegisters">0</div>
-                    </div>
-                    <div class="meta__item">
-                        <div class="meta__label">Ostatni odczyt</div>
-                        <div class="meta__value" id="statLastRead">Brak</div>
-                    </div>
-                </div>
-                <div class="note" id="roleNote">Rola uzytkownika determinuje dostep do funkcji administracyjnych.</div>
+
+                <div id="transformerList" class="list"></div>
+                <div id="transformerEmpty" class="empty">Brak transformatorow. Dodaj pierwszy wpis powyzej.</div>
             </section>
         </section>
     </main>
@@ -124,6 +128,6 @@
     <script src="ui.js"></script>
     <script src="panel-common.js"></script>
     <script src="panel-data.js"></script>
-    <script src="dashboard.js"></script>
+    <script src="transformers.js"></script>
 </body>
 </html>

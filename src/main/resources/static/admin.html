@@ -3,23 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Panel Backend Transformer do zarzadzania transformatorami, danymi technicznymi i odczytami.">
-    <meta name="keywords" content="backend transformer, panel, transformatory, zarzadzanie, odczyty">
+    <meta name="description" content="Administracja panelu Backend Transformer.">
+    <meta name="keywords" content="admin, panel, zarzadzanie, backend transformer">
     <meta name="author" content="Backend Transformer">
     <meta name="application-name" content="Backend Transformer">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="noindex, nofollow">
     <meta name="theme-color" content="#1d4ed8">
     <meta name="color-scheme" content="light dark">
-    <meta property="og:title" content="Backend Transformer - Panel">
-    <meta property="og:description" content="Nowoczesny panel do zarzadzania transformatorami i odczytami.">
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="pl_PL">
-    <meta property="og:site_name" content="Backend Transformer">
-    <meta name="twitter:card" content="summary">
-    <title>Panel startowy - Backend Transformer</title>
+    <title>Admin - Backend Transformer</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="theme-light" data-page="dashboard">
+<body class="theme-light" data-page="admin">
     <header class="topbar">
         <div class="topbar__brand">Backend Transformer</div>
         <nav class="topbar__nav">
@@ -44,43 +38,68 @@
         <section class="stack">
             <section class="card">
                 <div class="card__header">
-                    <span class="card__eyebrow">Proste kroki</span>
-                    <h2>Jak korzystac z panelu</h2>
-                    <p>Panel jest podzielony na osobne podstrony. Zacznij od dodania transformatora, a nastepnie uzupelnij mierniki i rejestry.</p>
+                    <span class="card__eyebrow">Administracja</span>
+                    <h2>Centrum zarzadzania</h2>
+                    <p>Panel administracyjny jest dostepny tylko dla roli <strong>admin</strong>.</p>
                 </div>
-                <ol class="steps">
-                    <li>Wejdz w "Transformatory" i dodaj nowy wpis.</li>
-                    <li>W "Mierniki" skonfiguruj mierniki i rejestry.</li>
-                    <li>W "Odczyty" sprawdz przykladowe dane.</li>
-                </ol>
-                <div class="note">Uwaga: To wersja demo bez prawdziwych endpointow. Gdy podasz endpointy, podlacze realne dane.</div>
+                <div class="note" id="adminNotice">Sprawdzam uprawnienia...</div>
+
+                <div class="meta">
+                    <div class="meta__item">
+                        <div class="meta__label">Transformatory</div>
+                        <div class="meta__value" id="adminTransformers">0</div>
+                    </div>
+                    <div class="meta__item">
+                        <div class="meta__label">Mierniki</div>
+                        <div class="meta__value" id="adminMeters">0</div>
+                    </div>
+                    <div class="meta__item">
+                        <div class="meta__label">Rejestry</div>
+                        <div class="meta__value" id="adminRegisters">0</div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <div class="controls__row">
+                        <button class="btn" id="adminSeed" type="button">Wczytaj dane demo</button>
+                        <button class="btn btn--ghost" id="adminWipe" type="button">Wyczysc wszystkie dane</button>
+                    </div>
+                </div>
             </section>
 
             <section class="card">
                 <div class="card__header">
-                    <span class="card__eyebrow">Podsumowanie</span>
-                    <h2>Stan biezacy</h2>
-                    <p>Podstawowe informacje o Twoich zasobach i uprawnieniach.</p>
+                    <span class="card__eyebrow">Uzytkownicy</span>
+                    <h2>Lista kont</h2>
+                    <p>Podglad i zarzadzanie uzytkownikami (lokalne dane demo).</p>
                 </div>
-                <div class="meta">
-                    <div class="meta__item">
-                        <div class="meta__label">Transformatory</div>
-                        <div class="meta__value" id="statTransformers">0</div>
-                    </div>
-                    <div class="meta__item">
-                        <div class="meta__label">Mierniki</div>
-                        <div class="meta__value" id="statMeters">0</div>
-                    </div>
-                    <div class="meta__item">
-                        <div class="meta__label">Rejestry</div>
-                        <div class="meta__value" id="statRegisters">0</div>
-                    </div>
-                    <div class="meta__item">
-                        <div class="meta__label">Ostatni odczyt</div>
-                        <div class="meta__value" id="statLastRead">Brak</div>
-                    </div>
+                <div id="userList" class="list"></div>
+                <div id="userEmpty" class="empty">Brak uzytkownikow w pamieci.</div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Hasla</span>
+                    <h2>Zmiana hasla uzytkownika</h2>
+                    <p>Do realnej zmiany hasla potrzebny jest endpoint backendu.</p>
                 </div>
-                <div class="note" id="roleNote">Rola uzytkownika determinuje dostep do funkcji administracyjnych.</div>
+                <form id="adminPasswordForm" class="form form--two" novalidate>
+                    <label class="field">
+                        <span>ID uzytkownika</span>
+                        <input type="text" name="userId" placeholder="UUID uzytkownika">
+                    </label>
+                    <label class="field">
+                        <span>Nowe haslo</span>
+                        <input type="password" name="password" placeholder="Nowe haslo">
+                    </label>
+                    <div class="form__actions field--full">
+                        <button class="btn" type="submit">Zmien haslo (demo)</button>
+                    </div>
+                </form>
+                <div class="result" id="adminPasswordResult">
+                    <div class="result__title">Status</div>
+                    <div class="result__body" id="adminPasswordResultBody">Wymagany endpoint backendu.</div>
+                </div>
             </section>
         </section>
     </main>
@@ -124,6 +143,6 @@
     <script src="ui.js"></script>
     <script src="panel-common.js"></script>
     <script src="panel-data.js"></script>
-    <script src="dashboard.js"></script>
+    <script src="admin.js"></script>
 </body>
 </html>

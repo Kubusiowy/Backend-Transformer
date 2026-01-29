@@ -33,6 +33,8 @@ class LoginService(
         val refreshTokenHash = passwordHasher.hash(refreshToken)
         val expiresAt = LocalDateTime.now().plusDays(30)
         repo.addRefreshToken(user.id.toString(), refreshTokenHash, expiresAt)
-        return LoginResponse(user.id, token, refreshToken)
+
+        val role = user.role
+        return LoginResponse(user.id, token, refreshToken, role)
     }
 }
