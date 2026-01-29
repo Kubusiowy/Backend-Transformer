@@ -109,15 +109,15 @@ class MeterRepository {
 
     suspend fun update(id: Long, updated: MeterRecord): Boolean = dbQuery {
         Meter.update({ Meter.id eq id }) { row ->
-            row[name] = updated.name
-            row[deviceCode] = updated.deviceCode
-            row[enabled] = updated.enabled
-            row[serialPort] = updated.serialPort
-            row[baudRate] = updated.baudRate
-            row[parity] = updated.parity
-            row[stopBits] = updated.stopBits
-            row[slaveId] = updated.slaveId
-            row[pollIntervalMs] = updated.pollIntervalMs
+            row[Meter.name] = updated.name
+            row[Meter.deviceCode] = updated.deviceCode
+            row[Meter.enabled] = updated.enabled
+            row[Meter.serialPort] = updated.serialPort
+            row[Meter.baudRate] = updated.baudRate
+            row[Meter.parity] = updated.parity
+            row[Meter.stopBits] = updated.stopBits
+            row[Meter.slaveId] = updated.slaveId
+            row[Meter.pollIntervalMs] = updated.pollIntervalMs
         } > 0
     }
 
@@ -162,15 +162,15 @@ class MeterRepository {
 
     suspend fun updateRegister(id: Long, updated: RegisterRecord): Boolean = dbQuery {
         MeterRegister.update({ MeterRegister.id eq id }) { row ->
-            row[name] = updated.name
-            row[registerType] = updated.registerType
-            row[address] = updated.address
-            row[length] = updated.length
-            row[dataType] = updated.dataType
-            row[scale] = updated.scale
-            row[unit] = updated.unit
-            row[enabled] = updated.enabled
-            row[orderIndex] = updated.orderIndex
+            row[MeterRegister.name] = updated.name
+            row[MeterRegister.registerType] = updated.registerType
+            row[MeterRegister.address] = updated.address
+            row[MeterRegister.length] = updated.length
+            row[MeterRegister.dataType] = updated.dataType
+            row[MeterRegister.scale] = updated.scale
+            row[MeterRegister.unit] = updated.unit
+            row[MeterRegister.enabled] = updated.enabled
+            row[MeterRegister.orderIndex] = updated.orderIndex
         } > 0
     }
 

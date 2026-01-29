@@ -8,6 +8,7 @@ import com.example.plugins.configureRouting
 import com.example.plugins.configureSecurity
 import com.example.plugins.configureSerialization
 import com.example.plugins.configureStatusPage
+import com.example.plugins.configureWebSockets
 import io.ktor.server.application.*
 
 
@@ -21,6 +22,7 @@ fun Application.module() {
     configureFrameworks()
     DatabaseFactory.init()
     configureHTTP()
+    configureWebSockets()
     configureSecurity()
     configureMonitoring()
     configureSerialization()

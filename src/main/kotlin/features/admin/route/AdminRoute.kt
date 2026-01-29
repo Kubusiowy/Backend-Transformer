@@ -105,4 +105,16 @@ fun Route.adminRoute() {
             call.respond(HttpStatusCode.OK)
         }
     }
+
+    route("/admin/users/{id}/transformers") {
+        delete {
+            val principal = getPrincipal(call)
+            requireAdmin(principal)
+            val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                ?: throw BadRequest("Invalid user id")
+            authRepo.findById(id) ?: throw NotFound("User not found")
+            transformerRepo.deleteByUser(id)
+            call.respond(HttpStatusCode.NoContent)
+        }
+    }
 }

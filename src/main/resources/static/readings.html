@@ -46,24 +46,53 @@
                 <div class="detail" id="selectedDetail">
                     <div class="detail__row"><span>Nazwa</span><strong id="detailName">(brak)</strong></div>
                     <div class="detail__row"><span>Lokalizacja</span><strong id="detailLocation">(brak)</strong></div>
-                    <div class="detail__row"><span>Numer seryjny</span><strong id="detailSerial">(brak)</strong></div>
-                    <div class="detail__row"><span>Moc</span><strong id="detailPower">(brak)</strong></div>
-                    <div class="detail__row"><span>Notatka</span><strong id="detailNote">(brak)</strong></div>
+                    <div class="detail__row"><span>ID</span><strong id="detailId">(brak)</strong></div>
+                    <div class="detail__row" data-admin-only><span>Wlasciciel</span><strong id="detailOwner">(brak)</strong></div>
                 </div>
 
                 <div class="metrics" id="metricsBox">
-                    <div class="metrics__row"><span>Napiecie</span><strong id="metricVoltage">(brak)</strong></div>
-                    <div class="metrics__row"><span>Temperatura</span><strong id="metricTemp">(brak)</strong></div>
-                    <div class="metrics__row"><span>Obciazenie</span><strong id="metricLoad">(brak)</strong></div>
-                    <div class="metrics__row"><span>Ostatni odczyt</span><strong id="metricTime">(brak)</strong></div>
+                    <div class="metrics__row"><span>Srednia</span><strong id="metricAvg">(brak)</strong></div>
+                    <div class="metrics__row"><span>Minimum</span><strong id="metricMin">(brak)</strong></div>
+                    <div class="metrics__row"><span>Maksimum</span><strong id="metricMax">(brak)</strong></div>
+                    <div class="metrics__row"><span>Ostatni bucket</span><strong id="metricTime">(brak)</strong></div>
                 </div>
 
                 <div class="controls">
                     <div class="controls__row">
-                        <button class="btn" id="readNow" type="button">Odczytaj dane</button>
+                        <button class="btn" id="readNow" type="button">Pobierz odczyty</button>
                         <button class="btn btn--ghost" id="deleteSelected" type="button">Usun zaznaczony</button>
                     </div>
                 </div>
+
+                <div class="metrics-filter">
+                    <label class="field">
+                        <span>Klucz pomiaru</span>
+                        <select id="metricKeySelect"></select>
+                    </label>
+                    <label class="field">
+                        <span>Limit punktow</span>
+                        <input type="number" id="metricLimit" min="10" max="5000" value="120">
+                    </label>
+                    <div class="metrics-filter__status" id="metricsStatus">WebSocket: offline</div>
+                </div>
+
+                <div class="table-wrap" id="metricsTableWrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Bucket</th>
+                                <th>Srednia</th>
+                                <th>Min</th>
+                                <th>Max</th>
+                                <th>Licznik</th>
+                                <th>Unit</th>
+                                <th>Etykieta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="metricsTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="empty" id="metricsEmpty">Brak odczytow dla wybranego klucza.</div>
 
                 <div class="result" id="transformerResult">
                     <div class="result__title">Status</div>
