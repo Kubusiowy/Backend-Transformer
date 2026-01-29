@@ -3,23 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Panel Backend Transformer do zarzadzania transformatorami, danymi technicznymi i odczytami.">
-    <meta name="keywords" content="backend transformer, panel, transformatory, zarzadzanie, odczyty">
+    <meta name="description" content="Konfiguracja rejestrow miernikow w panelu Backend Transformer.">
+    <meta name="keywords" content="rejestry, mierniki, konfiguracja, backend transformer">
     <meta name="author" content="Backend Transformer">
     <meta name="application-name" content="Backend Transformer">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#1d4ed8">
     <meta name="color-scheme" content="light dark">
-    <meta property="og:title" content="Backend Transformer - Panel">
-    <meta property="og:description" content="Nowoczesny panel do zarzadzania transformatorami i odczytami.">
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="pl_PL">
-    <meta property="og:site_name" content="Backend Transformer">
-    <meta name="twitter:card" content="summary">
-    <title>Panel startowy - Backend Transformer</title>
+    <title>Rejestry - Backend Transformer</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="theme-light" data-page="dashboard">
+<body class="theme-light" data-page="registers">
     <header class="topbar">
         <div class="topbar__brand">Backend Transformer</div>
         <nav class="topbar__nav">
@@ -52,44 +46,98 @@
         <section class="stack">
             <section class="card">
                 <div class="card__header">
-                    <span class="card__eyebrow">Proste kroki</span>
-                    <h2>Jak korzystac z panelu</h2>
-                    <p>Panel jest podzielony na osobne podstrony. Zacznij od dodania transformatora, a nastepnie uzupelnij mierniki i rejestry.</p>
+                    <span class="card__eyebrow">Rejestry</span>
+                    <h2>Wybierz transformator i miernik</h2>
+                    <p>Najpierw wybierz transformator, potem miernik. Rejestry dodasz ponizej.</p>
                 </div>
-                <ol class="steps">
-                    <li>Wejdz w "Transformatory" i dodaj nowy wpis.</li>
-                    <li>W "Mierniki" skonfiguruj mierniki.</li>
-                    <li>W "Rejestry" dodaj rejestry dla miernika.</li>
-                    <li>W "Odczyty" sprawdz dane.</li>
-                </ol>
-                <div class="note">Panel jest podlaczony do endpointow API. Dodane dane zapisuja sie w bazie.</div>
+                <div class="form form--two">
+                    <label class="field">
+                        <span>Transformator</span>
+                        <select id="registerTransformerSelect"></select>
+                    </label>
+                    <label class="field">
+                        <span>Miernik</span>
+                        <select id="registerMeterSelect"></select>
+                    </label>
+                    <div class="form__actions field--full">
+                        <button class="btn btn--ghost" id="registerRefresh" type="button">Odswiez listy</button>
+                        <a class="btn" href="/static/meters.html">Przejdz do miernikow</a>
+                    </div>
+                </div>
+                <div class="note" id="registerSelectionHint">Wczytuje dane...</div>
+                <div class="result" id="registerStatus">
+                    <div class="result__title">Status</div>
+                    <div class="result__body" id="registerStatusBody">Wybierz transformator i miernik.</div>
+                </div>
             </section>
 
             <section class="card">
                 <div class="card__header">
-                    <span class="card__eyebrow">Podsumowanie</span>
-                    <h2>Stan biezacy</h2>
-                    <p>Podstawowe informacje o Twoich zasobach i uprawnieniach.</p>
+                    <span class="card__eyebrow">Dodawanie</span>
+                    <h2>Dodaj rejestr miernika</h2>
+                    <p>Konfiguracja zgodna z tabela <em>meter_register</em> w bazie danych.</p>
                 </div>
-                <div class="meta">
-                    <div class="meta__item">
-                        <div class="meta__label">Transformatory</div>
-                        <div class="meta__value" id="statTransformers">0</div>
+                <form id="addRegisterForm" class="form form--two" novalidate>
+                    <label class="field">
+                        <span>Nazwa *</span>
+                        <input type="text" name="name" placeholder="np. Napiecie L1" required>
+                    </label>
+                    <label class="field">
+                        <span>Typ rejestru</span>
+                        <select name="registerType">
+                            <option value="INPUT" selected>INPUT</option>
+                            <option value="HOLDING">HOLDING</option>
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Adres</span>
+                        <input type="number" name="address" min="0" value="0" required>
+                    </label>
+                    <label class="field">
+                        <span>Dlugosc</span>
+                        <input type="number" name="length" min="1" value="2" required>
+                    </label>
+                    <label class="field">
+                        <span>Typ danych</span>
+                        <select name="dataType">
+                            <option value="INT16">INT16</option>
+                            <option value="INT32">INT32</option>
+                            <option value="FLOAT32" selected>FLOAT32</option>
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Skala</span>
+                        <input type="number" name="scale" step="0.01" value="1" required>
+                    </label>
+                    <label class="field">
+                        <span>Jednostka</span>
+                        <input type="text" name="unit" placeholder="np. kV">
+                    </label>
+                    <label class="field">
+                        <span>Kolejnosc</span>
+                        <input type="number" name="orderIndex" min="0" value="0" required>
+                    </label>
+                    <label class="field field--full">
+                        <span>Aktywny</span>
+                        <select name="enabled">
+                            <option value="1" selected>Tak</option>
+                            <option value="0">Nie</option>
+                        </select>
+                    </label>
+                    <div class="form__actions field--full">
+                        <button class="btn" type="submit">Dodaj rejestr</button>
                     </div>
-                    <div class="meta__item">
-                        <div class="meta__label">Mierniki</div>
-                        <div class="meta__value" id="statMeters">0</div>
-                    </div>
-                    <div class="meta__item">
-                        <div class="meta__label">Rejestry</div>
-                        <div class="meta__value" id="statRegisters">0</div>
-                    </div>
-                    <div class="meta__item">
-                        <div class="meta__label">Ostatni odczyt</div>
-                        <div class="meta__value" id="statLastRead">Brak</div>
-                    </div>
+                </form>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Lista</span>
+                    <h2>Rejestry wybranego miernika</h2>
+                    <p>Lista pokazuje rejestry dla aktualnego miernika.</p>
                 </div>
-                <div class="note" id="roleNote">Rola uzytkownika determinuje dostep do funkcji administracyjnych.</div>
+                <div id="registerList" class="list"></div>
+                <div id="registerEmpty" class="empty">Brak rejestrow. Dodaj pierwszy wpis powyzej.</div>
             </section>
         </section>
     </main>
@@ -134,6 +182,6 @@
     <script src="api.js"></script>
     <script src="panel-common.js"></script>
     <script src="panel-data.js"></script>
-    <script src="dashboard.js"></script>
+    <script src="registers.js"></script>
 </body>
 </html>

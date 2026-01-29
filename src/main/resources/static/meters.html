@@ -19,8 +19,16 @@
         <nav class="topbar__nav">
             <div class="topbar__tabs" role="navigation" aria-label="Nawigacja panelu">
                 <a class="topbar__tab" data-page-link="dashboard" href="/static/panel.html">Start</a>
-                <a class="topbar__tab" data-page-link="transformers" href="/static/transformers.html">Transformatory</a>
-                <a class="topbar__tab" data-page-link="meters" href="/static/meters.html">Mierniki</a>
+                <div class="topbar__group">
+                    <button class="topbar__tab topbar__tab--group" type="button" aria-haspopup="true">
+                        Konfiguracja
+                    </button>
+                    <div class="topbar__menu">
+                        <a class="topbar__tab topbar__tab--sub" data-page-link="transformers" href="/static/transformers.html">Transformatory</a>
+                        <a class="topbar__tab topbar__tab--sub" data-page-link="meters" href="/static/meters.html">Mierniki</a>
+                        <a class="topbar__tab topbar__tab--sub" data-page-link="registers" href="/static/registers.html">Rejestry</a>
+                    </div>
+                </div>
                 <a class="topbar__tab" data-page-link="readings" href="/static/readings.html">Odczyty</a>
                 <a class="topbar__tab" data-page-link="profile" href="/static/profile.html">Profil</a>
                 <a class="topbar__tab" data-page-link="admin" data-admin-link href="/static/admin.html">Admin</a>
@@ -148,86 +156,7 @@
                 <div class="note" id="meterSelectHint">Wybierz miernik z listy powyzej.</div>
                 <div id="meterList" class="list"></div>
                 <div id="meterEmpty" class="empty">Brak miernikow. Dodaj pierwszy wpis powyzej.</div>
-                <div class="result" id="registerSelectionAlert">
-                    <div class="result__title">Wybrany miernik</div>
-                    <div class="result__body">Nie wybrano miernika. Kliknij "Wybierz" przy mierniku z listy.</div>
-                </div>
-            </section>
-
-            <section class="card">
-                <div class="card__header">
-                    <span class="card__eyebrow">Rejestry</span>
-                    <h2>Dodaj rejestr miernika</h2>
-                    <p>Konfiguracja zgodna z tabela <em>meter_register</em> w bazie danych.</p>
-                </div>
-                <div class="note" id="registerContext">Wybierz miernik, aby dodac rejestr.</div>
-
-                <div class="detail" id="selectedMeterDetail">
-                    <div class="detail__row"><span>Nazwa</span><strong id="detailMeterName">(brak)</strong></div>
-                    <div class="detail__row"><span>Device code</span><strong id="detailMeterDevice">(brak)</strong></div>
-                    <div class="detail__row"><span>Port</span><strong id="detailMeterPort">(brak)</strong></div>
-                    <div class="detail__row"><span>Slave ID</span><strong id="detailMeterSlave">(brak)</strong></div>
-                </div>
-
-                <form id="addRegisterForm" class="form form--two" novalidate>
-                    <label class="field">
-                        <span>Nazwa *</span>
-                        <input type="text" name="name" placeholder="np. Napiecie L1" required>
-                    </label>
-                    <label class="field">
-                        <span>Typ rejestru</span>
-                        <select name="registerType">
-                            <option value="INPUT" selected>INPUT</option>
-                            <option value="HOLDING">HOLDING</option>
-                        </select>
-                    </label>
-                    <label class="field">
-                        <span>Adres</span>
-                        <input type="number" name="address" min="0" value="0" required>
-                    </label>
-                    <label class="field">
-                        <span>Dlugosc</span>
-                        <input type="number" name="length" min="1" value="2" required>
-                    </label>
-                    <label class="field">
-                        <span>Typ danych</span>
-                        <select name="dataType">
-                            <option value="INT16">INT16</option>
-                            <option value="INT32">INT32</option>
-                            <option value="FLOAT32" selected>FLOAT32</option>
-                        </select>
-                    </label>
-                    <label class="field">
-                        <span>Skala</span>
-                        <input type="number" name="scale" step="0.01" value="1" required>
-                    </label>
-                    <label class="field">
-                        <span>Jednostka</span>
-                        <input type="text" name="unit" placeholder="np. kV">
-                    </label>
-                    <label class="field">
-                        <span>Kolejnosc</span>
-                        <input type="number" name="orderIndex" min="0" value="0" required>
-                    </label>
-                    <label class="field field--full">
-                        <span>Aktywny</span>
-                        <select name="enabled">
-                            <option value="1" selected>Tak</option>
-                            <option value="0">Nie</option>
-                        </select>
-                    </label>
-                    <div class="form__actions field--full">
-                        <button class="btn" type="submit">Dodaj rejestr</button>
-                    </div>
-                </form>
-
-                <div class="result" id="registerResult">
-                    <div class="result__title">Status</div>
-                    <div class="result__body" id="registerResultBody">Brak rejestrow.</div>
-                </div>
-
-                <div id="registerList" class="list"></div>
-                <div id="registerEmpty" class="empty">Brak rejestrow. Dodaj pierwszy wpis powyzej.</div>
+                <div class="note">Rejestry dodasz na osobnej stronie: Rejestry.</div>
             </section>
         </section>
     </main>

@@ -56,6 +56,13 @@ const updateNavState = () => {
         link.setAttribute("aria-current", isActive ? "page" : "false");
     });
 
+    const configPages = new Set(["transformers", "meters", "registers"]);
+    document.querySelectorAll(".topbar__tab--group").forEach((btn) => {
+        const active = configPages.has(page);
+        btn.classList.toggle("is-active", active);
+        btn.setAttribute("aria-expanded", active ? "true" : "false");
+    });
+
     document.querySelectorAll("[data-admin-link]").forEach((link) => {
         link.style.display = isAdmin ? "inline-flex" : "none";
     });

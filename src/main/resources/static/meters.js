@@ -12,22 +12,8 @@ const meterSelect = document.getElementById("meterSelect");
 const meterRefresh = document.getElementById("meterRefresh");
 const meterSelectHint = document.getElementById("meterSelectHint");
 
-const registerForm = document.getElementById("addRegisterForm");
-const registerResult = document.getElementById("registerResult");
-const registerResultBody = document.getElementById("registerResultBody");
-const registerList = document.getElementById("registerList");
-const registerEmpty = document.getElementById("registerEmpty");
-const registerContext = document.getElementById("registerContext");
-const registerSelectionAlert = document.getElementById("registerSelectionAlert");
-
-const detailMeterName = document.getElementById("detailMeterName");
-const detailMeterDevice = document.getElementById("detailMeterDevice");
-const detailMeterPort = document.getElementById("detailMeterPort");
-const detailMeterSlave = document.getElementById("detailMeterSlave");
-
 let transformers = [];
 let meters = [];
-let registers = [];
 let selectedTransformerId = window.BTData ? window.BTData.getSelectedId() : null;
 
 const setMeterResult = (message, state) => {
@@ -38,17 +24,6 @@ const setMeterResult = (message, state) => {
     meterResult.classList.remove("result--success", "result--error");
     if (state) {
         meterResult.classList.add(state);
-    }
-};
-
-const setRegisterResult = (message, state) => {
-    if (!registerResultBody || !registerResult) {
-        return;
-    }
-    registerResultBody.textContent = message;
-    registerResult.classList.remove("result--success", "result--error");
-    if (state) {
-        registerResult.classList.add(state);
     }
 };
 
@@ -121,36 +96,15 @@ const renderMeterSelect = () => {
     }
 };
 
-const toggleForms = (meterEnabled, registerEnabled) => {
+const toggleForms = (meterEnabled) => {
     if (meterForm) {
         meterForm.querySelectorAll("input, select, button").forEach((field) => {
             field.disabled = !meterEnabled;
         });
     }
-    if (registerForm) {
-        registerForm.querySelectorAll("input, select, button").forEach((field) => {
-            field.disabled = !registerEnabled;
-        });
-    }
 };
 
-const updateMeterDetail = () => {
-    const meter = getSelectedMeter();
-    if (!detailMeterName || !detailMeterDevice || !detailMeterPort || !detailMeterSlave) {
-        return;
-    }
-    if (!meter) {
-        detailMeterName.textContent = "(brak)";
-        detailMeterDevice.textContent = "(brak)";
-        detailMeterPort.textContent = "(brak)";
-        detailMeterSlave.textContent = "(brak)";
-        return;
-    }
-    detailMeterName.textContent = meter.name;
-    detailMeterDevice.textContent = meter.deviceCode;
-    detailMeterPort.textContent = meter.serialPort;
-    detailMeterSlave.textContent = String(meter.slaveId);
-};
+const updateMeterDetail = () => {};
 
 const renderMeters = () => {
     if (!meterList || !meterEmpty) {
@@ -171,8 +125,7 @@ const renderMeters = () => {
             meterSelectionAlert.textContent = "Najpierw wybierz transformator z listy powyzej.";
             meterSelectionAlert.classList.add("result--error");
         }
-        toggleForms(false, false);
-        updateMeterDetail();
+        toggleForms(false);
         return;
     }
 
@@ -248,98 +201,7 @@ const renderMeters = () => {
         meterList.append(item);
     });
 
-    toggleForms(true, Boolean(getSelectedMeter()));
-    updateMeterDetail();
-};
-
-const renderRegisters = () => {
-    if (!registerList || !registerEmpty) {
-        return;
-    }
-    registerList.innerHTML = "";
-
-    const meter = getSelectedMeter();
-    if (!meter) {
-        registerEmpty.textContent = "Wybierz miernik, aby dodac rejestry.";
-        registerEmpty.style.display = "block";
-        registerList.style.display = "none";
-        if (registerContext) {
-            registerContext.textContent = "Wybierz miernik, aby dodac rejestr.";
-        }
-        if (registerSelectionAlert) {
-            registerSelectionAlert.textContent = "Nie wybrano miernika. Wybierz go z listy powyzej.";
-            registerSelectionAlert.classList.add("result--error");
-        }
-        toggleForms(true, false);
-        return;
-    }
-
-    if (registerContext) {
-        registerContext.textContent = `Dodajesz rejestr do: ${meter.name}`;
-    }
-    if (registerSelectionAlert) {
-        registerSelectionAlert.textContent = `Wybrany miernik: ${meter.name}.`;
-        registerSelectionAlert.classList.remove("result--error");
-    }
-
-    if (!registers.length) {
-        registerEmpty.style.display = "block";
-        registerList.style.display = "none";
-    } else {
-        registerEmpty.style.display = "none";
-        registerList.style.display = "grid";
-    }
-
-    registers.forEach((register) => {
-        const item = document.createElement("div");
-        item.className = "list__item";
-
-        const main = document.createElement("div");
-        main.className = "list__main";
-
-        const name = document.createElement("div");
-        name.className = "list__name";
-        name.textContent = register.name;
-
-        const meta = document.createElement("div");
-        meta.className = "list__meta";
-        meta.textContent = `${register.registerType} | ${register.address} | ${register.dataType}`;
-
-        const tags = document.createElement("div");
-        tags.className = "list__tags";
-
-        const scaleTag = document.createElement("span");
-        scaleTag.className = "tag";
-        scaleTag.textContent = `Skala: ${register.scale}`;
-        tags.append(scaleTag);
-
-        if (register.unit) {
-            const unitTag = document.createElement("span");
-            unitTag.className = "tag";
-            unitTag.textContent = register.unit;
-            tags.append(unitTag);
-        }
-
-        const statusTag = document.createElement("span");
-        statusTag.className = "tag";
-        statusTag.textContent = register.enabled ? "Aktywny" : "Wylaczony";
-        tags.append(statusTag);
-
-        main.append(name, meta, tags);
-
-        const actions = document.createElement("div");
-        actions.className = "list__actions";
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.type = "button";
-        deleteBtn.className = "btn btn--ghost btn--small";
-        deleteBtn.textContent = "Usun";
-        deleteBtn.addEventListener("click", () => removeRegister(register.id));
-
-        actions.append(deleteBtn);
-        item.append(main, actions);
-        registerList.append(item);
-    });
+    toggleForms(true);
 };
 
 const fetchTransformers = async () => {
@@ -358,7 +220,7 @@ const fetchTransformers = async () => {
             setSelectedTransformerId(transformers[0].id);
         }
         meters = [];
-        registers = [];
+        
         renderTransformerSelect();
         renderMeterSelect();
         renderMeters();
@@ -419,9 +281,7 @@ const handleTransformerChange = () => {
     setSelectedMeterInfo(selectedId, null);
     renderTransformerSelect();
     meters = [];
-    registers = [];
     renderMeters();
-    renderRegisters();
     fetchMeters();
 };
 
@@ -429,13 +289,11 @@ const fetchMeters = async () => {
     const selected = getSelectedTransformer();
     if (!selected || !window.BT_API?.request) {
         meters = [];
-        registers = [];
         if (meterSelectionAlert) {
             meterSelectionAlert.textContent = "Nie mozna wczytac transformatorow. Sprawdz polaczenie.";
             meterSelectionAlert.classList.add("result--error");
         }
         renderMeters();
-        renderRegisters();
         return;
     }
     try {
@@ -452,27 +310,8 @@ const fetchMeters = async () => {
         }
         renderMeterSelect();
         renderMeters();
-        fetchRegisters();
     } catch (error) {
         setMeterResult(error?.message || "Blad pobierania miernikow.", "result--error");
-    }
-};
-
-const fetchRegisters = async () => {
-    const meter = getSelectedMeter();
-    if (!meter || !window.BT_API?.request) {
-        registers = [];
-        renderRegisters();
-        return;
-    }
-    try {
-        registers = await window.BT_API.request("GET", `/meters/${meter.id}/registers`);
-        if (!Array.isArray(registers)) {
-            registers = [];
-        }
-        renderRegisters();
-    } catch (error) {
-        setRegisterResult(error?.message || "Blad pobierania rejestrow.", "result--error");
     }
 };
 
@@ -515,58 +354,6 @@ const removeMeter = async (id) => {
     }
 };
 
-const addRegister = async (payload) => {
-    const meter = getSelectedMeter();
-    if (!meter) {
-        setRegisterResult("Najpierw wybierz miernik.", "result--error");
-        return;
-    }
-    const selectedTransformer = getSelectedTransformer();
-    if (!selectedTransformer) {
-        setRegisterResult("Najpierw wybierz transformator.", "result--error");
-        return;
-    }
-    const meterExists = meters.find((item) => item.id === meter.id);
-    if (!meterExists) {
-        setRegisterResult("Wybrany miernik nie pasuje do aktualnego transformatora. Odswiez liste.", "result--error");
-        return;
-    }
-    const info = getSelectedMeterInfo();
-    if (!info || info.transformerId !== selectedTransformer.id || info.meterId !== meter.id) {
-        setSelectedMeterInfo(selectedTransformer.id, meter.id);
-    }
-    if (!window.BT_API?.request) {
-        setRegisterResult("Brak konfiguracji API.", "result--error");
-        return;
-    }
-    setRegisterResult("Dodawanie rejestru...", null);
-    try {
-        await window.BT_API.request("POST", `/meters/${meter.id}/registers`, payload);
-        await fetchRegisters();
-        setRegisterResult("Rejestr dodany.", "result--success");
-    } catch (error) {
-        setRegisterResult(error?.message || "Blad zapisu rejestru.", "result--error");
-    }
-};
-
-const removeRegister = async (id) => {
-    const meter = getSelectedMeter();
-    if (!meter) {
-        return;
-    }
-    if (!window.BT_API?.request) {
-        setRegisterResult("Brak konfiguracji API.", "result--error");
-        return;
-    }
-    setRegisterResult("Usuwanie rejestru...", null);
-    try {
-        await window.BT_API.request("DELETE", `/meters/${meter.id}/registers/${id}`);
-        await fetchRegisters();
-        setRegisterResult("Rejestr usuniety.", "result--success");
-    } catch (error) {
-        setRegisterResult(error?.message || "Blad usuwania rejestru.", "result--error");
-    }
-};
 
 if (meterForm) {
     meterForm.addEventListener("submit", (event) => {
@@ -606,48 +393,6 @@ if (meterForm) {
         meterForm.querySelector("[name=parity]").value = "NONE";
         meterForm.querySelector("[name=stopBits]").value = "1";
         meterForm.querySelector("[name=enabled]").value = "1";
-    });
-}
-
-if (registerForm) {
-    registerForm.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const formData = new FormData(registerForm);
-        const name = String(formData.get("name") || "").trim();
-        const registerType = String(formData.get("registerType") || "INPUT");
-        const address = Number(formData.get("address") || 0);
-        const length = Number(formData.get("length") || 1);
-        const dataType = String(formData.get("dataType") || "INT16");
-        const scale = Number(formData.get("scale") || 1);
-        const unit = String(formData.get("unit") || "").trim();
-        const orderIndex = Number(formData.get("orderIndex") || 0);
-        const enabled = String(formData.get("enabled") || "1") === "1";
-
-        if (!name) {
-            setRegisterResult("Pole 'Nazwa' jest wymagane.", "result--error");
-            return;
-        }
-
-        addRegister({
-            name,
-            registerType,
-            address,
-            length,
-            dataType,
-            scale,
-            unit,
-            orderIndex,
-            enabled
-        });
-
-        registerForm.reset();
-        registerForm.querySelector("[name=address]").value = "0";
-        registerForm.querySelector("[name=length]").value = "2";
-        registerForm.querySelector("[name=scale]").value = "1";
-        registerForm.querySelector("[name=orderIndex]").value = "0";
-        registerForm.querySelector("[name=registerType]").value = "INPUT";
-        registerForm.querySelector("[name=dataType]").value = "FLOAT32";
-        registerForm.querySelector("[name=enabled]").value = "1";
     });
 }
 

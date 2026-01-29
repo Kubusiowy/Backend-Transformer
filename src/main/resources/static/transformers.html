@@ -19,8 +19,16 @@
         <nav class="topbar__nav">
             <div class="topbar__tabs" role="navigation" aria-label="Nawigacja panelu">
                 <a class="topbar__tab" data-page-link="dashboard" href="/static/panel.html">Start</a>
-                <a class="topbar__tab" data-page-link="transformers" href="/static/transformers.html">Transformatory</a>
-                <a class="topbar__tab" data-page-link="meters" href="/static/meters.html">Mierniki</a>
+                <div class="topbar__group">
+                    <button class="topbar__tab topbar__tab--group" type="button" aria-haspopup="true">
+                        Konfiguracja
+                    </button>
+                    <div class="topbar__menu">
+                        <a class="topbar__tab topbar__tab--sub" data-page-link="transformers" href="/static/transformers.html">Transformatory</a>
+                        <a class="topbar__tab topbar__tab--sub" data-page-link="meters" href="/static/meters.html">Mierniki</a>
+                        <a class="topbar__tab topbar__tab--sub" data-page-link="registers" href="/static/registers.html">Rejestry</a>
+                    </div>
+                </div>
                 <a class="topbar__tab" data-page-link="readings" href="/static/readings.html">Odczyty</a>
                 <a class="topbar__tab" data-page-link="profile" href="/static/profile.html">Profil</a>
                 <a class="topbar__tab" data-page-link="admin" data-admin-link href="/static/admin.html">Admin</a>
