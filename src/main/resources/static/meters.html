@@ -38,11 +38,39 @@
         <section class="stack">
             <section class="card">
                 <div class="card__header">
+                    <span class="card__eyebrow">Transformator</span>
+                    <h2>Wybierz transformator do konfiguracji</h2>
+                    <p>To na nim dodasz mierniki i rejestry. Zmienisz wybor w kazdej chwili.</p>
+                </div>
+                <ol class="steps">
+                    <li>Wybierz transformator z listy.</li>
+                    <li>Dodaj miernik w sekcji ponizej.</li>
+                    <li>Dodaj rejestry dla wybranego miernika.</li>
+                </ol>
+                <div class="form form--two">
+                    <label class="field field--full">
+                        <span>Wybrany transformator</span>
+                        <select id="meterTransformerSelect"></select>
+                    </label>
+                    <div class="form__actions field--full">
+                        <button class="btn btn--ghost" id="meterTransformerRefresh" type="button">Odswiez liste</button>
+                        <a class="btn" href="/static/transformers.html">Przejdz do transformatorow</a>
+                    </div>
+                </div>
+                <div class="note" id="meterTransformerHint">Wczytuje transformatory...</div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
                     <span class="card__eyebrow">Mierniki</span>
                     <h2>Dodaj miernik</h2>
                     <p>Konfiguracja zgodna z tabela <em>meter</em> w bazie danych.</p>
                 </div>
                 <div class="note" id="meterContext">Wybierz transformator, aby dodac miernik.</div>
+                <div class="result" id="meterSelectionAlert">
+                    <div class="result__title">Wazne</div>
+                    <div class="result__body">Najpierw wybierz transformator z listy powyzej.</div>
+                </div>
 
                 <form id="addMeterForm" class="form form--two" novalidate>
                     <label class="field">
@@ -108,8 +136,22 @@
                     <h2>Mierniki transformatora</h2>
                     <p>Wybierz miernik, aby dodac rejestry i odczyty.</p>
                 </div>
+                <div class="form form--two">
+                    <label class="field field--full">
+                        <span>Wybrany miernik</span>
+                        <select id="meterSelect"></select>
+                    </label>
+                    <div class="form__actions field--full">
+                        <button class="btn btn--ghost" id="meterRefresh" type="button">Odswiez mierniki</button>
+                    </div>
+                </div>
+                <div class="note" id="meterSelectHint">Wybierz miernik z listy powyzej.</div>
                 <div id="meterList" class="list"></div>
                 <div id="meterEmpty" class="empty">Brak miernikow. Dodaj pierwszy wpis powyzej.</div>
+                <div class="result" id="registerSelectionAlert">
+                    <div class="result__title">Wybrany miernik</div>
+                    <div class="result__body">Nie wybrano miernika. Kliknij "Wybierz" przy mierniku z listy.</div>
+                </div>
             </section>
 
             <section class="card">

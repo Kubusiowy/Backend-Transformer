@@ -1,44 +1,52 @@
-const detailName = document.getElementById("detailName");
-const detailLocation = document.getElementById("detailLocation");
-const detailId = document.getElementById("detailId");
-const detailOwner = document.getElementById("detailOwner");
+const transformerSelect = document.getElementById("readingsTransformerSelect");
+const meterSelect = document.getElementById("readingsMeterSelect");
+const limitInput = document.getElementById("readingsLimit");
+const loadBtn = document.getElementById("readingsLoad");
+const refreshBtn = document.getElementById("readingsRefresh");
+const selectionHint = document.getElementById("readingsSelectionHint");
+const statusBox = document.getElementById("readingsStatus");
+const statusBody = document.getElementById("readingsStatusBody");
+const wsStatus = document.getElementById("readingsWsStatus");
 
-const metricAvg = document.getElementById("metricAvg");
-const metricMin = document.getElementById("metricMin");
-const metricMax = document.getElementById("metricMax");
-const metricTime = document.getElementById("metricTime");
+const registerPickerList = document.getElementById("registerPickerList");
+const registerPickerEmpty = document.getElementById("registerPickerEmpty");
+const registerSelectAll = document.getElementById("registerSelectAll");
+const registerClear = document.getElementById("registerClear");
 
-const metricKeySelect = document.getElementById("metricKeySelect");
-const metricLimit = document.getElementById("metricLimit");
-const metricsStatus = document.getElementById("metricsStatus");
-const metricsTableBody = document.getElementById("metricsTableBody");
-const metricsEmpty = document.getElementById("metricsEmpty");
-const metricsTableWrap = document.getElementById("metricsTableWrap");
-const chartCanvas = document.getElementById("metricsChart");
+const metricsGrid = document.getElementById("registerMetricsGrid");
+const metricsEmpty = document.getElementById("registerMetricsEmpty");
 
-const readNowBtn = document.getElementById("readNow");
-const deleteSelectedBtn = document.getElementById("deleteSelected");
-const transformerResult = document.getElementById("transformerResult");
-const transformerResultBody = document.getElementById("transformerResultBody");
-
-let currentTransformer = null;
-let currentPoints = [];
+let transformers = [];
+let meters = [];
+let registers = [];
+let metricKeys = [];
+let selectedRegisterKeys = new Set();
+let metricsByKey = {};
 let ws = null;
 
-const setResult = (message, state) => {
-    if (!transformerResultBody || !transformerResult) {
+let selectedTransformerId = window.BTData ? window.BTData.getSelectedId() : null;
+let selectedMeterInfo = window.BTData ? window.BTData.getSelectedMeterInfo() : null;
+
+const setStatus = (message, state) => {
+    if (!statusBody || !statusBox) {
         return;
     }
-    transformerResultBody.textContent = message;
-    transformerResult.classList.remove("result--success", "result--error");
+    statusBody.textContent = message;
+    statusBox.classList.remove("result--success", "result--error");
     if (state) {
-        transformerResult.classList.add(state);
+        statusBox.classList.add(state);
+    }
+};
+
+const setHint = (message) => {
+    if (selectionHint) {
+        selectionHint.textContent = message;
     }
 };
 
 const setWsStatus = (message) => {
-    if (metricsStatus) {
-        metricsStatus.textContent = message;
+    if (wsStatus) {
+        wsStatus.textContent = message;
     }
 };
 
@@ -50,271 +58,447 @@ const formatValue = (value, unit) => {
     return unit ? `${formatted} ${unit}` : formatted;
 };
 
-const updateSummary = (point) => {
-    if (!metricAvg || !metricMin || !metricMax || !metricTime) {
-        return;
-    }
-    if (!point) {
-        metricAvg.textContent = "(brak)";
-        metricMin.textContent = "(brak)";
-        metricMax.textContent = "(brak)";
-        metricTime.textContent = "(brak)";
-        return;
-    }
-    metricAvg.textContent = formatValue(point.avgValue, point.unit);
-    metricMin.textContent = formatValue(point.minValue, point.unit);
-    metricMax.textContent = formatValue(point.maxValue, point.unit);
-    metricTime.textContent = point.bucketTs || "(brak)";
+const getSelectedTransformerId = () => selectedTransformerId;
+
+const setSelectedTransformerId = (id) => {
+    selectedTransformerId = id || null;
     if (window.BTData) {
-        window.BTData.setLastRead(point.bucketTs || new Date().toISOString());
+        window.BTData.setSelectedId(selectedTransformerId);
     }
 };
 
-const updateTransformerDetail = (transformer) => {
-    if (!detailName || !detailLocation || !detailId) {
+const getSelectedMeterId = () => {
+    if (!selectedMeterInfo || selectedMeterInfo.transformerId !== getSelectedTransformerId()) {
+        return null;
+    }
+    return selectedMeterInfo.meterId || null;
+};
+
+const setSelectedMeterId = (meterId) => {
+    const transformerId = getSelectedTransformerId();
+    if (window.BTData) {
+        window.BTData.setSelectedMeterInfo(transformerId, meterId || null);
+    }
+    selectedMeterInfo = window.BTData ? window.BTData.getSelectedMeterInfo() : null;
+};
+
+const getSelectedTransformer = () => {
+    const id = getSelectedTransformerId();
+    return transformers.find((t) => t.id === id) || null;
+};
+
+const getSelectedMeter = () => {
+    const meterId = getSelectedMeterId();
+    return meters.find((m) => m.id === meterId) || null;
+};
+
+const getMetricLimit = () => {
+    const value = Number(limitInput?.value || 120);
+    if (!value || value < 10) {
+        return 120;
+    }
+    return Math.min(value, 5000);
+};
+
+const getRegisterKey = (register) => {
+    const name = (register?.name || "").trim();
+    if (name) {
+        return name;
+    }
+    const address = register?.address ?? "unknown";
+    return `reg-${address}`;
+};
+
+const resetMetrics = () => {
+    metricsByKey = {};
+    selectedRegisterKeys = new Set();
+    renderMetricsGrid();
+};
+
+const renderTransformerSelect = () => {
+    if (!transformerSelect) {
         return;
     }
-    if (!transformer) {
-        detailName.textContent = "(brak)";
-        detailLocation.textContent = "(brak)";
-        detailId.textContent = "(brak)";
-        if (detailOwner) {
-            detailOwner.textContent = "(brak)";
+    transformerSelect.innerHTML = "";
+    if (!transformers.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Brak transformatorow";
+        transformerSelect.append(option);
+        transformerSelect.disabled = true;
+        setHint("Nie masz transformatorow. Dodaj je w zakladce Transformatory.");
+        return;
+    }
+    transformerSelect.disabled = false;
+    transformers.forEach((transformer) => {
+        const option = document.createElement("option");
+        option.value = transformer.id;
+        option.textContent = `${transformer.name} (${transformer.id})`;
+        transformerSelect.append(option);
+    });
+    if (getSelectedTransformerId()) {
+        transformerSelect.value = getSelectedTransformerId();
+    }
+};
+
+const renderMeterSelect = () => {
+    if (!meterSelect) {
+        return;
+    }
+    meterSelect.innerHTML = "";
+    if (!meters.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Brak miernikow";
+        meterSelect.append(option);
+        meterSelect.disabled = true;
+        return;
+    }
+    meterSelect.disabled = false;
+    meters.forEach((meter) => {
+        const option = document.createElement("option");
+        option.value = meter.id;
+        option.textContent = `${meter.name} (${meter.deviceCode})`;
+        meterSelect.append(option);
+    });
+    if (getSelectedMeterId()) {
+        meterSelect.value = getSelectedMeterId();
+    }
+};
+
+const renderRegisterPicker = () => {
+    if (!registerPickerList || !registerPickerEmpty) {
+        return;
+    }
+    registerPickerList.innerHTML = "";
+    if (!registers.length) {
+        const meter = getSelectedMeter();
+        registerPickerEmpty.textContent = meter
+            ? "Brak rejestrow dla wybranego miernika."
+            : "Wybierz miernik, aby zobaczyc rejestry.";
+        registerPickerEmpty.style.display = "block";
+        registerPickerList.style.display = "none";
+        if (registerSelectAll) {
+            registerSelectAll.disabled = true;
+            registerSelectAll.classList.add("btn--disabled");
+        }
+        if (registerClear) {
+            registerClear.disabled = true;
+            registerClear.classList.add("btn--disabled");
         }
         return;
     }
-    detailName.textContent = transformer.name || "(brak)";
-    detailLocation.textContent = transformer.location || "(brak)";
-    detailId.textContent = transformer.id || "(brak)";
-    if (detailOwner) {
-        detailOwner.textContent = transformer.userId || "(brak)";
+    registerPickerEmpty.style.display = "none";
+    registerPickerList.style.display = "grid";
+    if (registerSelectAll) {
+        registerSelectAll.disabled = false;
+        registerSelectAll.classList.remove("btn--disabled");
     }
+    if (registerClear) {
+        registerClear.disabled = false;
+        registerClear.classList.remove("btn--disabled");
+    }
+
+    registers.forEach((register) => {
+        const key = getRegisterKey(register);
+        const item = document.createElement("label");
+        item.className = "register-item";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = key;
+        checkbox.checked = selectedRegisterKeys.has(key);
+        checkbox.addEventListener("change", () => {
+            if (checkbox.checked) {
+                selectedRegisterKeys.add(key);
+            } else {
+                selectedRegisterKeys.delete(key);
+            }
+            renderMetricsGrid();
+            if (selectedRegisterKeys.size) {
+                loadMetricsForSelected();
+            }
+        });
+
+        const meta = document.createElement("div");
+        meta.className = "register-item__meta";
+        meta.textContent = `${register.registerType} | adres ${register.address} | ${register.dataType}`;
+
+        const name = document.createElement("div");
+        name.className = "register-item__name";
+        name.textContent = register.name;
+
+        const badge = document.createElement("span");
+        badge.className = "register-item__badge";
+        badge.textContent = metricKeys.includes(key) ? "dane OK" : "brak danych";
+        if (!metricKeys.includes(key)) {
+            badge.classList.add("register-item__badge--warn");
+        }
+
+        const content = document.createElement("div");
+        content.className = "register-item__content";
+        content.append(name, meta, badge);
+
+        item.append(checkbox, content);
+        registerPickerList.append(item);
+    });
 };
 
-const renderTable = (points) => {
-    if (!metricsTableBody || !metricsEmpty || !metricsTableWrap) {
+const renderMetricsGrid = () => {
+    if (!metricsGrid || !metricsEmpty) {
         return;
     }
-    metricsTableBody.innerHTML = "";
-    if (!points.length) {
+    metricsGrid.innerHTML = "";
+    if (!selectedRegisterKeys.size) {
         metricsEmpty.style.display = "block";
-        metricsTableWrap.style.display = "none";
+        metricsGrid.style.display = "none";
         return;
     }
     metricsEmpty.style.display = "none";
-    metricsTableWrap.style.display = "block";
+    metricsGrid.style.display = "grid";
 
-    points.forEach((point) => {
-        const row = document.createElement("tr");
-        const cells = [
-            point.bucketTs,
-            formatValue(point.avgValue, point.unit),
-            formatValue(point.minValue, point.unit),
-            formatValue(point.maxValue, point.unit),
-            point.count ?? "",
-            point.unit || "",
-            point.label || ""
+    selectedRegisterKeys.forEach((key) => {
+        const points = metricsByKey[key] || [];
+        const latest = points[0] || null;
+
+        const card = document.createElement("div");
+        card.className = "metric-card";
+
+        const header = document.createElement("div");
+        header.className = "metric-card__header";
+        const title = document.createElement("div");
+        title.className = "metric-card__title";
+        title.textContent = key;
+        const subtitle = document.createElement("div");
+        subtitle.className = "metric-card__subtitle";
+        const register = registers.find((item) => getRegisterKey(item) === key);
+        const meta = register
+            ? `${register.registerType} | adres ${register.address} | ${register.dataType}`
+            : latest?.label || "Brak etykiety";
+        subtitle.textContent = meta;
+        header.append(title, subtitle);
+
+        const stats = document.createElement("div");
+        stats.className = "metric-card__stats";
+        const statRows = [
+            ["Srednia", formatValue(latest?.avgValue, latest?.unit)],
+            ["Min", formatValue(latest?.minValue, latest?.unit)],
+            ["Max", formatValue(latest?.maxValue, latest?.unit)],
+            ["Bucket", latest?.bucketTs || "(brak)"]
         ];
-        cells.forEach((value) => {
-            const cell = document.createElement("td");
-            cell.textContent = value ?? "";
-            row.append(cell);
+        statRows.forEach(([label, value]) => {
+            const row = document.createElement("div");
+            row.className = "metric-card__stat";
+            const labelEl = document.createElement("span");
+            labelEl.textContent = label;
+            const valueEl = document.createElement("strong");
+            valueEl.textContent = value;
+            row.append(labelEl, valueEl);
+            stats.append(row);
         });
-        metricsTableBody.append(row);
-    });
-};
 
-const parseBucket = (value) => {
-    if (!value) {
-        return null;
-    }
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-        return null;
-    }
-    return parsed;
-};
-
-const drawChart = (points) => {
-    if (!chartCanvas || !chartCanvas.getContext) {
-        return;
-    }
-    const ctx = chartCanvas.getContext("2d");
-    const container = chartCanvas.parentElement;
-    const width = container ? container.clientWidth : chartCanvas.width;
-    const height = chartCanvas.height || 240;
-    const ratio = window.devicePixelRatio || 1;
-    chartCanvas.width = Math.floor(width * ratio);
-    chartCanvas.height = Math.floor(height * ratio);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(ratio, ratio);
-
-    ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = "rgba(15, 23, 42, 0.04)";
-    ctx.fillRect(0, 0, width, height);
-
-    if (!points.length) {
-        ctx.fillStyle = "#64748b";
-        ctx.font = "12px sans-serif";
-        ctx.fillText("Brak danych", 12, 20);
-        return;
-    }
-
-    const values = points.map((p) => Number(p.avgValue ?? p.maxValue ?? 0));
-    let min = Math.min(...values);
-    let max = Math.max(...values);
-    if (min === max) {
-        min -= 1;
-        max += 1;
-    }
-
-    const padding = 32;
-    const chartWidth = width - padding * 2;
-    const chartHeight = height - padding * 2;
-
-    ctx.strokeStyle = "rgba(148, 163, 184, 0.4)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, height - padding);
-    ctx.lineTo(width - padding, height - padding);
-    ctx.stroke();
-
-    ctx.strokeStyle = "rgba(14, 165, 233, 0.9)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    points.forEach((point, index) => {
-        const value = Number(point.avgValue ?? point.maxValue ?? 0);
-        const x = padding + (chartWidth * index) / Math.max(points.length - 1, 1);
-        const y =
-            height -
-            padding -
-            ((value - min) / (max - min)) * chartHeight;
-        if (index === 0) {
-            ctx.moveTo(x, y);
+        const tableWrap = document.createElement("div");
+        tableWrap.className = "metric-card__table";
+        if (!points.length) {
+            const empty = document.createElement("div");
+            empty.className = "empty";
+            empty.textContent = "Brak danych dla tego rejestru.";
+            tableWrap.append(empty);
         } else {
-            ctx.lineTo(x, y);
+            const table = document.createElement("table");
+            table.className = "table";
+            const thead = document.createElement("thead");
+            thead.innerHTML = "<tr><th>Bucket</th><th>Srednia</th><th>Min</th><th>Max</th></tr>";
+            const tbody = document.createElement("tbody");
+            points.slice(0, 10).forEach((point) => {
+                const row = document.createElement("tr");
+                const cells = [
+                    point.bucketTs,
+                    formatValue(point.avgValue, point.unit),
+                    formatValue(point.minValue, point.unit),
+                    formatValue(point.maxValue, point.unit)
+                ];
+                cells.forEach((value) => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value ?? "";
+                    row.append(cell);
+                });
+                tbody.append(row);
+            });
+            table.append(thead, tbody);
+            tableWrap.append(table);
         }
-    });
-    ctx.stroke();
 
-    ctx.fillStyle = "#0ea5e9";
-    points.forEach((point, index) => {
-        const value = Number(point.avgValue ?? point.maxValue ?? 0);
-        const x = padding + (chartWidth * index) / Math.max(points.length - 1, 1);
-        const y =
-            height -
-            padding -
-            ((value - min) / (max - min)) * chartHeight;
-        ctx.beginPath();
-        ctx.arc(x, y, 3, 0, Math.PI * 2);
-        ctx.fill();
+        card.append(header, stats, tableWrap);
+        metricsGrid.append(card);
     });
 };
 
-const refreshChart = () => drawChart(currentPoints.slice().reverse());
-
-const loadTransformer = async () => {
-    const selectedId = window.BTData ? window.BTData.getSelectedId() : null;
-    if (!selectedId) {
-        updateTransformerDetail(null);
-        setResult("Najpierw wybierz transformator w sekcji Transformatory.", "result--error");
-        return;
-    }
+const loadTransformers = async () => {
     if (!window.BT_API?.request) {
-        setResult("Brak konfiguracji API.", "result--error");
+        setStatus("Brak konfiguracji API.", "result--error");
         return;
     }
     try {
-        const transformer = await window.BT_API.request("GET", `/transformers/${selectedId}`);
-        currentTransformer = transformer || null;
-        updateTransformerDetail(currentTransformer);
-        setResult("Transformator gotowy do odczytow.", "result--success");
-        await loadMetricKeys();
-        connectWs();
+        const data = await window.BT_API.request("GET", "/transformers");
+        transformers = Array.isArray(data) ? data : [];
+        if (selectedTransformerId && !transformers.find((t) => t.id === selectedTransformerId)) {
+            setSelectedTransformerId(null);
+        }
+        if (!getSelectedTransformerId() && transformers.length) {
+            setSelectedTransformerId(transformers[0].id);
+        }
+        renderTransformerSelect();
+        if (!transformers.length) {
+            setStatus("Brak transformatorow. Dodaj je w zakladce Transformatory.", "result--error");
+            setHint("Dodaj transformator, aby wyswietlic odczyty.");
+            clearWs();
+            meters = [];
+            registers = [];
+            renderMeterSelect();
+            renderRegisterPicker();
+            resetMetrics();
+            return;
+        }
+        await loadMeters();
     } catch (error) {
-        setResult(error?.message || "Blad pobierania transformatora.", "result--error");
+        setStatus(error?.message || "Blad pobierania transformatorow.", "result--error");
+    }
+};
+
+const loadMeters = async () => {
+    const transformer = getSelectedTransformer();
+    if (!transformer || !window.BT_API?.request) {
+        meters = [];
+        renderMeterSelect();
+        registers = [];
+        renderRegisterPicker();
+        resetMetrics();
+        setHint("Wybierz transformator, aby zobaczyc mierniki.");
+        return;
+    }
+    try {
+        const data = await window.BT_API.request("GET", `/transformers/${transformer.id}/meters`);
+        meters = Array.isArray(data) ? data : [];
+        if (getSelectedMeterId() && !meters.find((m) => m.id === getSelectedMeterId())) {
+            setSelectedMeterId(null);
+        }
+        if (!getSelectedMeterId() && meters.length) {
+            setSelectedMeterId(meters[0].id);
+        }
+        renderMeterSelect();
+        await loadRegisters();
+        if (!meters.length) {
+            setHint(`Wybrany transformator: ${transformer.name}. Brak miernikow.`);
+        } else {
+            setHint(`Wybrany transformator: ${transformer.name}.`);
+        }
+    } catch (error) {
+        setStatus(error?.message || "Blad pobierania miernikow.", "result--error");
+    }
+};
+
+const loadRegisters = async () => {
+    const meter = getSelectedMeter();
+    if (!meter || !window.BT_API?.request) {
+        registers = [];
+        renderRegisterPicker();
+        resetMetrics();
+        const transformer = getSelectedTransformer();
+        if (transformer) {
+            setHint(`Wybrany transformator: ${transformer.name}. Wybierz miernik, aby zobaczyc rejestry.`);
+        }
+        return;
+    }
+    try {
+        const data = await window.BT_API.request("GET", `/meters/${meter.id}/registers`);
+        registers = Array.isArray(data) ? data : [];
+        await loadMetricKeys();
+        const available = new Set(registers.map((register) => getRegisterKey(register)));
+        selectedRegisterKeys = new Set(
+            Array.from(selectedRegisterKeys).filter((key) => available.has(key))
+        );
+        metricsByKey = {};
+        renderRegisterPicker();
+        renderMetricsGrid();
+        if (selectedRegisterKeys.size) {
+            loadMetricsForSelected();
+        }
+        const transformer = getSelectedTransformer();
+        if (transformer) {
+            setHint(`Wybrany transformator: ${transformer.name}. Miernik: ${meter.name}.`);
+        }
+    } catch (error) {
+        setStatus(error?.message || "Blad pobierania rejestrow.", "result--error");
     }
 };
 
 const loadMetricKeys = async () => {
-    if (!currentTransformer || !window.BT_API?.request) {
+    const transformer = getSelectedTransformer();
+    if (!transformer || !window.BT_API?.request) {
+        metricKeys = [];
         return;
     }
     try {
-        const keys = await window.BT_API.request(
-            "GET",
-            `/transformers/${currentTransformer.id}/metrics/keys`
-        );
-        const list = Array.isArray(keys) ? keys : [];
-        if (metricKeySelect) {
-            metricKeySelect.innerHTML = "";
-            list.forEach((key) => {
-                const option = document.createElement("option");
-                option.value = key;
-                option.textContent = key;
-                metricKeySelect.append(option);
-            });
-            metricKeySelect.disabled = list.length === 0;
-        }
-        if (list.length) {
-            await loadMetrics();
-        } else {
-            updateSummary(null);
-            renderTable([]);
-            drawChart([]);
-        }
+        const keys = await window.BT_API.request("GET", `/transformers/${transformer.id}/metrics/keys`);
+        metricKeys = Array.isArray(keys) ? keys : [];
     } catch (error) {
-        setResult(error?.message || "Blad pobierania kluczy.", "result--error");
+        metricKeys = [];
     }
 };
 
-const loadMetrics = async () => {
-    if (!currentTransformer || !window.BT_API?.request) {
+const loadMetricsForSelected = async () => {
+    const transformer = getSelectedTransformer();
+    if (!transformer || !window.BT_API?.request) {
+        setStatus("Najpierw wybierz transformator.", "result--error");
         return;
     }
-    const key = metricKeySelect ? metricKeySelect.value : null;
-    if (!key) {
-        setResult("Brak klucza pomiaru.", "result--error");
+    if (!selectedRegisterKeys.size) {
+        setStatus("Zaznacz rejestry do odczytu.", "result--error");
+        renderMetricsGrid();
         return;
     }
-    const limitValue = metricLimit ? Number(metricLimit.value || 120) : 120;
-    try {
-        const points = await window.BT_API.request(
-            "GET",
-            `/transformers/${currentTransformer.id}/metrics?key=${encodeURIComponent(
-                key
-            )}&limit=${limitValue}&order=desc`
-        );
-        currentPoints = Array.isArray(points) ? points : [];
-        renderTable(currentPoints);
-        updateSummary(currentPoints[0] || null);
-        refreshChart();
-        setResult("Odczyty zaktualizowane.", "result--success");
-    } catch (error) {
-        setResult(error?.message || "Blad pobierania odczytow.", "result--error");
-    }
+    const limit = getMetricLimit();
+    setStatus("Pobieram dane...", null);
+    const entries = Array.from(selectedRegisterKeys.values());
+    await Promise.all(
+        entries.map(async (key) => {
+            try {
+                const points = await window.BT_API.request(
+                    "GET",
+                    `/transformers/${transformer.id}/metrics?key=${encodeURIComponent(key)}&limit=${limit}&order=desc`
+                );
+                metricsByKey[key] = Array.isArray(points) ? points : [];
+            } catch (error) {
+                metricsByKey[key] = [];
+            }
+        })
+    );
+    renderMetricsGrid();
+    setStatus("Dane zaktualizowane.", "result--success");
 };
 
 const handleWsMessage = (data) => {
     if (!data) {
         return;
     }
-    const payload = typeof data === "string" ? JSON.parse(data) : data;
-    const key = metricKeySelect ? metricKeySelect.value : null;
-    if (!payload || !key || payload.key !== key) {
+    let payload = null;
+    try {
+        payload = typeof data === "string" ? JSON.parse(data) : data;
+    } catch (error) {
         return;
     }
-    currentPoints.unshift(payload);
-    const limitValue = metricLimit ? Number(metricLimit.value || 120) : 120;
-    currentPoints = currentPoints.slice(0, limitValue);
-    renderTable(currentPoints);
-    updateSummary(currentPoints[0] || null);
-    refreshChart();
+    if (!payload?.key || !selectedRegisterKeys.has(payload.key)) {
+        return;
+    }
+    const current = metricsByKey[payload.key] || [];
+    metricsByKey[payload.key] = [payload, ...current].slice(0, getMetricLimit());
+    renderMetricsGrid();
 };
 
 const connectWs = async () => {
-    if (!currentTransformer || !window.BT_API?.buildWsUrl) {
+    const transformer = getSelectedTransformer();
+    if (!transformer || !window.BT_API?.buildWsUrl) {
         return;
     }
     if (ws) {
@@ -329,58 +513,77 @@ const connectWs = async () => {
         return;
     }
     const url = window.BT_API.buildWsUrl(
-        `/ws/transformers/${currentTransformer.id}/metrics?token=${encodeURIComponent(token)}`
+        `/ws/transformers/${transformer.id}/metrics?token=${encodeURIComponent(token)}`
     );
     ws = new WebSocket(url);
     ws.onopen = () => setWsStatus("WebSocket: online");
     ws.onclose = () => setWsStatus("WebSocket: offline");
     ws.onerror = () => setWsStatus("WebSocket: blad");
-    ws.onmessage = (event) => {
-        try {
-            handleWsMessage(event.data);
-        } catch (error) {
-            setWsStatus("WebSocket: blad danych");
-        }
-    };
+    ws.onmessage = (event) => handleWsMessage(event.data);
 };
 
-const removeSelected = async () => {
-    if (!currentTransformer || !window.BT_API?.request) {
-        return;
+const clearWs = () => {
+    if (ws) {
+        ws.close();
+        ws = null;
     }
-    try {
-        await window.BT_API.request("DELETE", `/transformers/${currentTransformer.id}`);
-        if (window.BTData) {
-            window.BTData.setSelectedId(null);
-        }
-        currentTransformer = null;
-        updateTransformerDetail(null);
-        updateSummary(null);
-        renderTable([]);
-        drawChart([]);
-        setResult("Transformator usuniety.", "result--success");
-    } catch (error) {
-        setResult(error?.message || "Blad usuwania.", "result--error");
-    }
+    setWsStatus("WebSocket: offline");
 };
 
-if (readNowBtn) {
-    readNowBtn.addEventListener("click", () => loadMetrics());
+if (transformerSelect) {
+    transformerSelect.addEventListener("change", async () => {
+        setSelectedTransformerId(transformerSelect.value || null);
+        setSelectedMeterId(null);
+        registers = [];
+        selectedRegisterKeys = new Set();
+        metricsByKey = {};
+        renderTransformerSelect();
+        renderMeterSelect();
+        renderRegisterPicker();
+        renderMetricsGrid();
+        clearWs();
+        await loadMeters();
+        connectWs();
+    });
 }
 
-if (deleteSelectedBtn) {
-    deleteSelectedBtn.addEventListener("click", () => removeSelected());
+if (meterSelect) {
+    meterSelect.addEventListener("change", async () => {
+        setSelectedMeterId(meterSelect.value || null);
+        registers = [];
+        selectedRegisterKeys = new Set();
+        metricsByKey = {};
+        renderRegisterPicker();
+        renderMetricsGrid();
+        await loadRegisters();
+    });
 }
 
-if (metricKeySelect) {
-    metricKeySelect.addEventListener("change", () => loadMetrics());
+if (refreshBtn) {
+    refreshBtn.addEventListener("click", () => loadTransformers());
 }
 
-if (metricLimit) {
-    metricLimit.addEventListener("change", () => loadMetrics());
+if (loadBtn) {
+    loadBtn.addEventListener("click", () => loadMetricsForSelected());
 }
 
-window.addEventListener("resize", () => refreshChart());
+if (registerSelectAll) {
+    registerSelectAll.addEventListener("click", () => {
+        selectedRegisterKeys = new Set(registers.map((register) => getRegisterKey(register)));
+        renderRegisterPicker();
+        renderMetricsGrid();
+        loadMetricsForSelected();
+    });
+}
+
+if (registerClear) {
+    registerClear.addEventListener("click", () => {
+        selectedRegisterKeys = new Set();
+        renderRegisterPicker();
+        renderMetricsGrid();
+    });
+}
+
 window.addEventListener("beforeunload", () => {
     if (ws) {
         ws.close();
@@ -388,7 +591,5 @@ window.addEventListener("beforeunload", () => {
 });
 
 setWsStatus("WebSocket: offline");
-updateSummary(null);
-renderTable([]);
-drawChart([]);
-loadTransformer();
+setStatus("Wybierz transformator i miernik.", null);
+loadTransformers().then(() => connectWs());

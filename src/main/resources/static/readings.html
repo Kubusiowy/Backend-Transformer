@@ -39,69 +39,57 @@
             <section class="card">
                 <div class="card__header">
                     <span class="card__eyebrow">Odczyt</span>
-                    <h2>Wybrany transformator</h2>
-                    <p>Wybierz pozycje z listy w sekcji Transformatory. Dane ponizej pochodza z backendu.</p>
+                    <h2>Wybierz transformator i miernik</h2>
+                    <p>Najpierw wybierz transformator, potem miernik. Na koncu zaznacz rejestry do odczytu.</p>
                 </div>
-
-                <div class="detail" id="selectedDetail">
-                    <div class="detail__row"><span>Nazwa</span><strong id="detailName">(brak)</strong></div>
-                    <div class="detail__row"><span>Lokalizacja</span><strong id="detailLocation">(brak)</strong></div>
-                    <div class="detail__row"><span>ID</span><strong id="detailId">(brak)</strong></div>
-                    <div class="detail__row" data-admin-only><span>Wlasciciel</span><strong id="detailOwner">(brak)</strong></div>
-                </div>
-
-                <div class="metrics" id="metricsBox">
-                    <div class="metrics__row"><span>Srednia</span><strong id="metricAvg">(brak)</strong></div>
-                    <div class="metrics__row"><span>Minimum</span><strong id="metricMin">(brak)</strong></div>
-                    <div class="metrics__row"><span>Maksimum</span><strong id="metricMax">(brak)</strong></div>
-                    <div class="metrics__row"><span>Ostatni bucket</span><strong id="metricTime">(brak)</strong></div>
-                </div>
-
-                <div class="controls">
-                    <div class="controls__row">
-                        <button class="btn" id="readNow" type="button">Pobierz odczyty</button>
-                        <button class="btn btn--ghost" id="deleteSelected" type="button">Usun zaznaczony</button>
-                    </div>
-                </div>
-
-                <div class="metrics-filter">
+                <div class="form form--two">
                     <label class="field">
-                        <span>Klucz pomiaru</span>
-                        <select id="metricKeySelect"></select>
+                        <span>Transformator</span>
+                        <select id="readingsTransformerSelect"></select>
+                    </label>
+                    <label class="field">
+                        <span>Miernik</span>
+                        <select id="readingsMeterSelect"></select>
                     </label>
                     <label class="field">
                         <span>Limit punktow</span>
-                        <input type="number" id="metricLimit" min="10" max="5000" value="120">
+                        <input type="number" id="readingsLimit" min="10" max="5000" value="120">
                     </label>
-                    <div class="metrics-filter__status" id="metricsStatus">WebSocket: offline</div>
+                    <div class="form__actions field--full">
+                        <button class="btn" id="readingsLoad" type="button">Pobierz dane</button>
+                        <button class="btn btn--ghost" id="readingsRefresh" type="button">Odswiez listy</button>
+                    </div>
                 </div>
-
-                <div class="chart" id="metricsChartWrap">
-                    <canvas id="metricsChart" width="800" height="240"></canvas>
-                </div>
-
-                <div class="table-wrap" id="metricsTableWrap">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Bucket</th>
-                                <th>Srednia</th>
-                                <th>Min</th>
-                                <th>Max</th>
-                                <th>Licznik</th>
-                                <th>Unit</th>
-                                <th>Etykieta</th>
-                            </tr>
-                        </thead>
-                        <tbody id="metricsTableBody"></tbody>
-                    </table>
-                </div>
-                <div class="empty" id="metricsEmpty">Brak odczytow dla wybranego klucza.</div>
-
-                <div class="result" id="transformerResult">
+                <div class="note" id="readingsSelectionHint">Wczytuje dane...</div>
+                <div class="result" id="readingsStatus">
                     <div class="result__title">Status</div>
-                    <div class="result__body" id="transformerResultBody">Czekam na dane.</div>
+                    <div class="result__body" id="readingsStatusBody">Wybierz transformator, aby rozpoczac.</div>
                 </div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Rejestry</span>
+                    <h2>Wybierz rejestry do odczytu</h2>
+                    <p>Mozesz zaznaczyc kilka rejestrow naraz. Dane pokaza sie ponizej.</p>
+                </div>
+                <div class="register-picker__actions">
+                    <button class="btn btn--ghost" id="registerSelectAll" type="button">Zaznacz wszystkie</button>
+                    <button class="btn btn--ghost" id="registerClear" type="button">Wyczysc</button>
+                    <div class="metrics-filter__status" id="readingsWsStatus">WebSocket: offline</div>
+                </div>
+                <div id="registerPickerList" class="register-picker__list"></div>
+                <div id="registerPickerEmpty" class="empty">Wybierz miernik, aby zobaczyc rejestry.</div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">Odczyty</span>
+                    <h2>Dane z wybranych rejestrow</h2>
+                    <p>Kazdy rejestr ma wlasne podsumowanie i tabele punktow.</p>
+                </div>
+                <div id="registerMetricsGrid" class="metrics-grid"></div>
+                <div id="registerMetricsEmpty" class="empty">Zaznacz rejestry, aby zobaczyc odczyty.</div>
             </section>
         </section>
     </main>

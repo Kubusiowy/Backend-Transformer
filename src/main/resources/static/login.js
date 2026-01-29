@@ -179,3 +179,20 @@ if (notice) {
     sessionStorage.removeItem("bt_login_notice");
     setResult(notice, "result--error");
 }
+
+const autoLogin = async () => {
+    const refreshToken = localStorage.getItem(STORAGE.refresh);
+    if (!refreshToken || !window.BT_API?.refreshAccessToken) {
+        return;
+    }
+    setResult("Odnawiam sesje...", null);
+    const refreshed = await window.BT_API.refreshAccessToken();
+    if (refreshed) {
+        setResult("Sesja aktywna. Przekierowuje do panelu...", "result--success");
+        window.location.href = "/static/panel.html";
+    } else {
+        setResult("Zaloguj sie, aby kontynuowac.", null);
+    }
+};
+
+autoLogin();
