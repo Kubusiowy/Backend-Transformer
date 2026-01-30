@@ -889,6 +889,50 @@ body.a11y-reduce-motion * {
     padding-bottom: 6px;
 }
 
+.ws-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.ws-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--muted);
+    box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.2);
+}
+
+.ws-status--online {
+    color: var(--success);
+}
+
+.ws-status--online .ws-dot {
+    background: var(--success);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
+.ws-status--offline {
+    color: var(--error);
+}
+
+.ws-status--offline .ws-dot {
+    background: var(--error);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.ws-status--warning {
+    color: var(--warning);
+}
+
+.ws-status--warning .ws-dot {
+    background: var(--warning);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
 .chart__header {
     display: flex;
     align-items: center;

@@ -7,6 +7,7 @@ import com.example.features.IOT.metrics.domain.DTO.request.MetricIngestRequest
 import com.example.features.IOT.metrics.domain.DTO.response.MetricPointResponse
 import com.example.features.IOT.transformer.data.TransformerRepository
 import com.example.plugins.Security.JwtService
+import io.ktor.server.application.log
 import io.ktor.server.routing.Route
 import io.ktor.server.websocket.webSocket
 import io.ktor.websocket.Frame
@@ -91,6 +92,10 @@ fun Route.metricsWsRoute() {
                 if (request.key.isBlank()) {
                     continue
                 }
+
+                call.application.log.info(
+                    "WS metrics ingest transformerId=$transformerId key=${request.key} value=${request.value} unit=${request.unit ?: "-"} timestamp=${request.timestamp ?: "now"}"
+                )
 
                 val timestamp = parseTimestamp(request.timestamp)
                 val bucketTs = timestamp.withSecond(0).withNano(0)

@@ -98,7 +98,10 @@
                 <div class="register-picker__actions">
                     <button class="btn btn--ghost" id="registerSelectAll" type="button">Zaznacz wszystkie</button>
                     <button class="btn btn--ghost" id="registerClear" type="button">Wyczysc</button>
-                    <div class="metrics-filter__status" id="readingsWsStatus">WebSocket: offline</div>
+                    <div class="metrics-filter__status ws-status ws-status--offline" id="readingsWsStatus" role="status" aria-live="polite">
+                        <span class="ws-dot" aria-hidden="true"></span>
+                        <span class="ws-status__text" id="readingsWsStatusText">WebSocket: offline</span>
+                    </div>
                 </div>
                 <div class="table-wrap" id="registerTableWrap">
                     <table class="table">
@@ -112,6 +115,8 @@
                                 <th>Typ danych</th>
                                 <th>Skala</th>
                                 <th>Jednostka</th>
+                                <th>Klucz WS</th>
+                                <th>Aktualna wartosc</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -119,6 +124,16 @@
                     </table>
                 </div>
                 <div id="registerPickerEmpty" class="empty">Wybierz miernik, aby zobaczyc rejestry.</div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
+                    <span class="card__eyebrow">WebSocket</span>
+                    <h2>Ostatnie wiadomosci WebSocket</h2>
+                    <p>Na zywo: przychodzace dane z backendu.</p>
+                </div>
+                <div class="log" id="wsLog"></div>
+                <div id="wsLogEmpty" class="empty">Brak danych WebSocket.</div>
             </section>
 
             <section class="card">

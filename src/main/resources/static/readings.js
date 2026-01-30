@@ -7,6 +7,9 @@ const selectionHint = document.getElementById("readingsSelectionHint");
 const statusBox = document.getElementById("readingsStatus");
 const statusBody = document.getElementById("readingsStatusBody");
 const wsStatus = document.getElementById("readingsWsStatus");
+const wsStatusText = document.getElementById("readingsWsStatusText");
+const wsLog = document.getElementById("wsLog");
+const wsLogEmpty = document.getElementById("wsLogEmpty");
 const errorsList = document.getElementById("transformerErrorsList");
 const errorsEmpty = document.getElementById("transformerErrorsEmpty");
 const errorsHint = document.getElementById("transformerErrorsHint");
@@ -32,6 +35,8 @@ let selectedRegisterKeys = new Set();
 let metricsByKey = {};
 let ws = null;
 let transformerErrors = [];
+let wsLogEntries = [];
+let registerKeyAliases = new Map();
 
 let selectedTransformerId = window.BTData ? window.BTData.getSelectedId() : null;
 let selectedMeterInfo = window.BTData ? window.BTData.getSelectedMeterInfo() : null;
@@ -53,9 +58,17 @@ const setHint = (message) => {
     }
 };
 
-const setWsStatus = (message) => {
-    if (wsStatus) {
+const setWsStatus = (message, state) => {
+    if (wsStatusText) {
+        wsStatusText.textContent = message;
+    } else if (wsStatus) {
         wsStatus.textContent = message;
+    }
+    if (wsStatus) {
+        wsStatus.classList.remove("ws-status--online", "ws-status--offline", "ws-status--warning");
+        if (state) {
+            wsStatus.classList.add(`ws-status--${state}`);
+        }
     }
 };
 
@@ -71,6 +84,17 @@ const formatValue = (value, unit) => {
     }
     const formatted = typeof value === "number" ? value.toFixed(2) : String(value);
     return unit ? `${formatted} ${unit}` : formatted;
+};
+
+const formatRoundedValue = (value, unit) => {
+    if (value === null || value === undefined) {
+        return "(brak)";
+    }
+    const rounded = typeof value === "number" ? Math.round(value) : Number(value);
+    if (Number.isNaN(rounded)) {
+        return formatValue(value, unit);
+    }
+    return unit ? `${rounded} ${unit}` : String(rounded);
 };
 
 const formatTimestamp = (value) => {
@@ -163,9 +187,67 @@ const getRegisterKey = (register) => {
     return `reg-${address}`;
 };
 
+const normalizeKey = (value) => String(value ?? "").trim().toLowerCase();
+
+const buildRegisterKeyAliases = () => {
+    registerKeyAliases = new Map();
+    registers.forEach((register) => {
+        const key = getRegisterKey(register);
+        const name = normalizeKey(register?.name);
+        const address = normalizeKey(register?.address);
+        const regAddress = normalizeKey(`reg-${register?.address}`);
+        const keyNorm = normalizeKey(key);
+
+        [name, address, regAddress, keyNorm].forEach((alias) => {
+            if (alias) {
+                registerKeyAliases.set(alias, key);
+            }
+        });
+    });
+};
+
+const deriveAliasesFromKey = (value) => {
+    const normalized = normalizeKey(value);
+    if (!normalized) {
+        return [];
+    }
+    const aliases = new Set([normalized]);
+    const dotParts = normalized.split(".");
+    if (dotParts.length > 1) {
+        aliases.add(dotParts[dotParts.length - 1]);
+    }
+    const slashParts = normalized.split("/");
+    if (slashParts.length > 1) {
+        aliases.add(slashParts[slashParts.length - 1]);
+    }
+    const colonParts = normalized.split(":");
+    if (colonParts.length > 1) {
+        aliases.add(colonParts[colonParts.length - 1]);
+    }
+    aliases.add(normalized.replace(/\s+/g, " ").trim());
+    return Array.from(aliases).filter(Boolean);
+};
+
+const resolveMetricKey = (payload) => {
+    if (!payload) {
+        return null;
+    }
+    const candidates = [
+        ...deriveAliasesFromKey(payload.key),
+        ...deriveAliasesFromKey(payload.label)
+    ];
+    for (const candidate of candidates) {
+        if (registerKeyAliases.has(candidate)) {
+            return registerKeyAliases.get(candidate);
+        }
+    }
+    return payload.key || payload.label || null;
+};
+
 const resetMetrics = () => {
     metricsByKey = {};
     selectedRegisterKeys = new Set();
+    buildRegisterKeyAliases();
     renderMetricsGrid();
 };
 
@@ -277,6 +359,7 @@ const renderRegisterPicker = () => {
             } else {
                 selectedRegisterKeys.delete(key);
             }
+            pruneMetricsStore();
             renderMetricsGrid();
             if (selectedRegisterKeys.size) {
                 loadMetricsForSelected();
@@ -291,12 +374,20 @@ const renderRegisterPicker = () => {
             register.dataType,
             register.scale,
             register.unit || "-",
+            getRegisterKey(register),
+            "",
             register.enabled ? "Aktywny" : "Wylaczony"
         ];
         row.append(selectCell);
-        cells.forEach((value) => {
+        cells.forEach((value, index) => {
             const cell = document.createElement("td");
-            cell.textContent = value;
+            if (index === 8) {
+                cell.className = "register-value";
+                cell.dataset.key = key;
+                cell.textContent = value || "(brak)";
+            } else {
+                cell.textContent = value;
+            }
             row.append(cell);
         });
 
@@ -309,6 +400,30 @@ const renderRegisterPicker = () => {
         });
 
         registerTableBody.append(row);
+    });
+};
+
+const updateRegisterValues = () => {
+    if (!registerTableBody) {
+        return;
+    }
+    const cells = registerTableBody.querySelectorAll(".register-value");
+    cells.forEach((cell) => {
+        const key = cell.dataset.key;
+        const points = key ? (metricsByKey[key] || []) : [];
+        const latest = points[0] || null;
+        cell.textContent = latest ? formatRoundedValue(latest.avgValue ?? latest.maxValue, latest.unit) : "(brak)";
+    });
+};
+
+const pruneMetricsStore = () => {
+    const allowed = new Set(selectedRegisterKeys);
+    Object.keys(metricsByKey).forEach((key) => {
+        if (!allowed.has(key)) {
+            delete metricsByKey[key];
+        } else if (Array.isArray(metricsByKey[key])) {
+            metricsByKey[key] = metricsByKey[key].slice(0, getMetricLimit());
+        }
     });
 };
 
@@ -350,6 +465,7 @@ const renderMetricsGrid = () => {
         const stats = document.createElement("div");
         stats.className = "metric-card__stats";
         const statRows = [
+            ["Aktualne", formatRoundedValue(latest?.avgValue ?? latest?.maxValue, latest?.unit)],
             ["Srednia", formatValue(latest?.avgValue, latest?.unit)],
             ["Min", formatValue(latest?.minValue, latest?.unit)],
             ["Max", formatValue(latest?.maxValue, latest?.unit)],
@@ -411,6 +527,7 @@ const renderMetricsGrid = () => {
     });
 
     renderCombinedChart();
+    updateRegisterValues();
 };
 
 const renderTransformerErrors = () => {
@@ -572,17 +689,19 @@ const loadRegisters = async () => {
     try {
         const data = await window.BT_API.request("GET", `/meters/${meter.id}/registers`);
         registers = Array.isArray(data) ? data : [];
+        buildRegisterKeyAliases();
+        pruneMetricsStore();
         await loadMetricKeys();
         const available = new Set(registers.map((register) => getRegisterKey(register)));
         selectedRegisterKeys = new Set(
             Array.from(selectedRegisterKeys).filter((key) => available.has(key))
         );
         metricsByKey = {};
-        renderRegisterPicker();
-        renderMetricsGrid();
-        if (selectedRegisterKeys.size) {
-            loadMetricsForSelected();
-        }
+    renderRegisterPicker();
+    renderMetricsGrid();
+    if (selectedRegisterKeys.size) {
+        loadMetricsForSelected();
+    }
         const transformer = getSelectedTransformer();
         if (transformer) {
             setHint(`Wybrany transformator: ${transformer.name}. Miernik: ${meter.name}.`);
@@ -635,6 +754,7 @@ const loadMetricsForSelected = async () => {
     );
     renderMetricsGrid();
     setStatus("Dane zaktualizowane.", "result--success");
+    updateRegisterValues();
 };
 
 const colorPalette = [
@@ -702,6 +822,21 @@ const renderCombinedChart = () => {
     ctx.lineTo(width - padding, height - padding);
     ctx.stroke();
 
+    ctx.fillStyle = "#64748b";
+    ctx.font = "11px sans-serif";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    const yTicks = [min, (min + max) / 2, max];
+    yTicks.forEach((value) => {
+        const y = height - padding - ((value - min) / (max - min)) * chartHeight;
+        ctx.fillText(value.toFixed(2), padding - 6, y);
+        ctx.strokeStyle = "rgba(148, 163, 184, 0.2)";
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(width - padding, y);
+        ctx.stroke();
+    });
+
     combinedLegend.innerHTML = "";
 
     series.forEach((points, index) => {
@@ -724,6 +859,19 @@ const renderCombinedChart = () => {
         });
         ctx.stroke();
 
+        points.forEach((point, pointIndex) => {
+            const value = Number(point.avgValue ?? point.maxValue ?? 0);
+            const x = padding + (chartWidth * pointIndex) / Math.max(points.length - 1, 1);
+            const y =
+                height -
+                padding -
+                ((value - min) / (max - min)) * chartHeight;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
         const legendItem = document.createElement("div");
         legendItem.className = "chart__legend-item";
         const swatch = document.createElement("span");
@@ -734,6 +882,27 @@ const renderCombinedChart = () => {
         legendItem.append(swatch, label);
         combinedLegend.append(legendItem);
     });
+
+    const refSeries = series.find((points) => points.length) || [];
+    if (refSeries.length) {
+        const first = refSeries[0]?.bucketTs;
+        const middle = refSeries[Math.floor(refSeries.length / 2)]?.bucketTs;
+        const last = refSeries[refSeries.length - 1]?.bucketTs;
+        const labels = [first, middle, last].map((value) => {
+            const parsed = new Date(value || "");
+            return Number.isNaN(parsed.getTime()) ? String(value || "") : parsed.toLocaleTimeString("pl-PL");
+        });
+        ctx.fillStyle = "#64748b";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        const positions = [padding, padding + chartWidth / 2, padding + chartWidth];
+        labels.forEach((label, idx) => {
+            if (!label) {
+                return;
+            }
+            ctx.fillText(label, positions[idx], height - padding + 6);
+        });
+    }
 };
 
 const drawMiniChart = (canvas, points) => {
@@ -770,6 +939,21 @@ const drawMiniChart = (canvas, points) => {
     const chartWidth = width - padding * 2;
     const chartHeight = height - padding * 2;
 
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    const yTicks = [min, (min + max) / 2, max];
+    yTicks.forEach((value) => {
+        const y = height - padding - ((value - min) / (max - min)) * chartHeight;
+        ctx.fillText(value.toFixed(1), padding - 4, y);
+        ctx.strokeStyle = "rgba(148, 163, 184, 0.15)";
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(width - padding, y);
+        ctx.stroke();
+    });
+
     ctx.strokeStyle = "rgba(14, 165, 233, 0.9)";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -786,6 +970,85 @@ const drawMiniChart = (canvas, points) => {
         }
     });
     ctx.stroke();
+
+    values.forEach((value, index) => {
+        const x = padding + (chartWidth * index) / Math.max(values.length - 1, 1);
+        const y =
+            height -
+            padding -
+            ((value - min) / (max - min)) * chartHeight;
+        ctx.fillStyle = "rgba(14, 165, 233, 0.9)";
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    const latest = values[values.length - 1];
+    ctx.fillStyle = "#0f172a";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(latest.toFixed(2), padding + 4, padding + 2);
+};
+
+const updateWsLogEmpty = () => {
+    if (!wsLog || !wsLogEmpty) {
+        return;
+    }
+    if (wsLogEntries.length) {
+        wsLogEmpty.style.display = "none";
+        wsLog.style.display = "grid";
+    } else {
+        wsLogEmpty.style.display = "block";
+        wsLog.style.display = "none";
+    }
+};
+
+const addWsLogEntry = (payload, raw) => {
+    if (!wsLog) {
+        return;
+    }
+    const item = document.createElement("div");
+    item.className = "log__item";
+
+    const time = document.createElement("div");
+    time.className = "log__time";
+    time.textContent = new Date().toLocaleTimeString("pl-PL");
+
+    const message = document.createElement("div");
+    if (payload?.key) {
+        const avg = payload.avgValue ?? payload.maxValue ?? "(brak)";
+        const min = payload.minValue ?? "(brak)";
+        const max = payload.maxValue ?? "(brak)";
+        const bucket = payload.bucketTs || "(brak)";
+        message.textContent = `key=${payload.key} avg=${avg} min=${min} max=${max} bucket=${bucket}`;
+    } else if (raw) {
+        message.textContent = String(raw);
+    } else {
+        message.textContent = "Nieznane dane WebSocket.";
+    }
+
+    item.append(time, message);
+    wsLog.prepend(item);
+    wsLogEntries.unshift(item);
+
+    if (wsLogEntries.length > 100) {
+        const last = wsLogEntries.pop();
+        if (last) {
+            last.remove();
+        }
+    }
+
+    updateWsLogEmpty();
+};
+
+const clearWsLog = () => {
+    if (!wsLog) {
+        wsLogEntries = [];
+        return;
+    }
+    wsLogEntries.forEach((item) => item.remove());
+    wsLogEntries = [];
+    updateWsLogEmpty();
 };
 
 const handleWsMessage = (data) => {
@@ -796,14 +1059,22 @@ const handleWsMessage = (data) => {
     try {
         payload = typeof data === "string" ? JSON.parse(data) : data;
     } catch (error) {
+        addWsLogEntry(null, data);
         return;
     }
-    if (!payload?.key || !selectedRegisterKeys.has(payload.key)) {
+    addWsLogEntry(payload, data);
+    const resolvedKey = resolveMetricKey(payload);
+    if (!resolvedKey) {
         return;
     }
-    const current = metricsByKey[payload.key] || [];
-    metricsByKey[payload.key] = [payload, ...current].slice(0, getMetricLimit());
+    const normalized = String(resolvedKey);
+    if (!selectedRegisterKeys.has(normalized)) {
+        return;
+    }
+    const current = metricsByKey[normalized] || [];
+    metricsByKey[normalized] = [payload, ...current].slice(0, getMetricLimit());
     renderMetricsGrid();
+    updateRegisterValues();
 };
 
 const connectWs = async () => {
@@ -814,21 +1085,22 @@ const connectWs = async () => {
     if (ws) {
         ws.close();
     }
+    setWsStatus("WebSocket: laczenie...", "warning");
     if (window.BT_API.refreshAccessToken) {
         await window.BT_API.refreshAccessToken();
     }
     const token = window.BT_API.getAccessToken ? window.BT_API.getAccessToken() : null;
     if (!token) {
-        setWsStatus("WebSocket: brak tokenu");
+        setWsStatus("WebSocket: brak tokenu", "warning");
         return;
     }
     const url = window.BT_API.buildWsUrl(
         `/ws/transformers/${transformer.id}/metrics?token=${encodeURIComponent(token)}`
     );
     ws = new WebSocket(url);
-    ws.onopen = () => setWsStatus("WebSocket: online");
-    ws.onclose = () => setWsStatus("WebSocket: offline");
-    ws.onerror = () => setWsStatus("WebSocket: blad");
+    ws.onopen = () => setWsStatus("WebSocket: online", "online");
+    ws.onclose = () => setWsStatus("WebSocket: offline", "offline");
+    ws.onerror = () => setWsStatus("WebSocket: blad", "warning");
     ws.onmessage = (event) => handleWsMessage(event.data);
 };
 
@@ -837,7 +1109,7 @@ const clearWs = () => {
         ws.close();
         ws = null;
     }
-    setWsStatus("WebSocket: offline");
+    setWsStatus("WebSocket: offline", "offline");
 };
 
 if (transformerSelect) {
@@ -853,6 +1125,7 @@ if (transformerSelect) {
         renderMetricsGrid();
         renderTransformerErrors();
         clearWs();
+        clearWsLog();
         await loadTransformerErrors();
         await loadMeters();
         connectWs();
@@ -886,6 +1159,7 @@ if (loadBtn) {
 if (registerSelectAll) {
     registerSelectAll.addEventListener("click", () => {
         selectedRegisterKeys = new Set(registers.map((register) => getRegisterKey(register)));
+        pruneMetricsStore();
         renderRegisterPicker();
         renderMetricsGrid();
         loadMetricsForSelected();
@@ -895,6 +1169,7 @@ if (registerSelectAll) {
 if (registerClear) {
     registerClear.addEventListener("click", () => {
         selectedRegisterKeys = new Set();
+        pruneMetricsStore();
         renderRegisterPicker();
         renderMetricsGrid();
     });
@@ -910,6 +1185,7 @@ window.addEventListener("beforeunload", () => {
     }
 });
 
-setWsStatus("WebSocket: offline");
+setWsStatus("WebSocket: offline", "offline");
 setStatus("Wybierz transformator i miernik.", null);
 loadTransformers().then(() => connectWs());
+updateWsLogEmpty();
