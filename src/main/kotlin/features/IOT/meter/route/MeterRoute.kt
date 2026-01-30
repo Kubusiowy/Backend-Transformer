@@ -181,12 +181,18 @@ fun Route.meterRoute() {
             val meter = meterRepo.findById(meterId) ?: throw NotFound("Meter not found")
             requireTransformerAccess(meter.transformerId, principal)
             val req = call.receive<RegisterCreateRequest>()
+            val registerType = req.registerType ?: com.example.core.db.exposedTables.RegisterType.INPUT
+            val length = req.length ?: when (req.dataType) {
+                com.example.core.db.exposedTables.RegisterDataType.INT16 -> 1
+                com.example.core.db.exposedTables.RegisterDataType.INT32 -> 2
+                com.example.core.db.exposedTables.RegisterDataType.FLOAT32 -> 2
+            }
             val created = meterRepo.createRegister(
                 meterId = meterId,
                 name = req.name.trim(),
-                registerType = req.registerType,
+                registerType = registerType,
                 address = req.address,
-                length = req.length,
+                length = length,
                 dataType = req.dataType,
                 scale = req.scale,
                 unit = req.unit,

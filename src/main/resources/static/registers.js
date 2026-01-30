@@ -373,30 +373,24 @@ if (registerForm) {
         event.preventDefault();
         const formData = new FormData(registerForm);
         const name = String(formData.get("name") || "").trim();
-        const registerType = String(formData.get("registerType") || "INPUT");
         const address = Number(formData.get("address") || 0);
-        const length = Number(formData.get("length") || 1);
         const dataType = String(formData.get("dataType") || "INT16");
-        const scale = Number(formData.get("scale") || 1);
         const unit = String(formData.get("unit") || "").trim();
-        const orderIndex = Number(formData.get("orderIndex") || 0);
-        const enabled = String(formData.get("enabled") || "1") === "1";
 
         if (!name) {
             setStatus("Pole 'Nazwa' jest wymagane.", "result--error");
             return;
         }
+        if (!Number.isFinite(address)) {
+            setStatus("Pole 'Adres' jest wymagane.", "result--error");
+            return;
+        }
 
         addRegister({
             name,
-            registerType,
             address,
-            length,
             dataType,
-            scale,
-            unit,
-            orderIndex,
-            enabled
+            unit
         });
     });
 }

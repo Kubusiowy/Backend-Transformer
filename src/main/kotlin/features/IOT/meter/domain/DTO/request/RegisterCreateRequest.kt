@@ -7,10 +7,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class RegisterCreateRequest(
     val name: String,
-    val registerType: RegisterType,
     val address: Int,
-    val length: Int,
     val dataType: RegisterDataType,
+    val registerType: RegisterType? = null,
+    val length: Int? = null,
     val scale: Double = 1.0,
     val unit: String? = null,
     val enabled: Boolean = true,

@@ -6,6 +6,8 @@ import com.example.core.db.exposedTables.TransformerErrors
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import java.time.Instant
@@ -36,6 +38,7 @@ class TransformerErrorRepository {
             .selectAll()
             .where { TransformerErrors.transformerId eq transformerId.toString() }
             .orderBy(TransformerErrors.createdAt, SortOrder.DESC)
+            .limit(5)
             .map(::rowToError)
     }
 
@@ -53,6 +56,15 @@ class TransformerErrorRepository {
             row[TransformerErrors.status] = status
             row[TransformerErrors.createdAt] = now
         } get TransformerErrors.id
+        val excessIds = TransformerErrors
+            .selectAll()
+            .where { TransformerErrors.transformerId eq transformerId.toString() }
+            .orderBy(TransformerErrors.createdAt, SortOrder.DESC)
+            .limit(1000).offset(start = 5)
+            .map { it[TransformerErrors.id] }
+        if (excessIds.isNotEmpty()) {
+            TransformerErrors.deleteWhere { TransformerErrors.id inList excessIds }
+        }
         TransformerErrors.selectAll().where { TransformerErrors.id eq newId }.first().let(::rowToError)
     }
 }

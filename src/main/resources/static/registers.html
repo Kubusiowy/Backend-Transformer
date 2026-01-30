@@ -84,7 +84,7 @@
                 <div class="card__header">
                     <span class="card__eyebrow">Dodawanie</span>
                     <h2>Dodaj rejestr miernika</h2>
-                    <p>Konfiguracja zgodna z tabela <em>meter_register</em> w bazie danych.</p>
+                    <p>Podaj tylko podstawowe dane. Pozostale parametry uzupelnia backend.</p>
                 </div>
                 <form id="addRegisterForm" class="form form--two" novalidate>
                     <label class="field">
@@ -92,19 +92,8 @@
                         <input type="text" name="name" placeholder="np. Napiecie L1" required>
                     </label>
                     <label class="field">
-                        <span>Typ rejestru</span>
-                        <select name="registerType">
-                            <option value="INPUT" selected>INPUT</option>
-                            <option value="HOLDING">HOLDING</option>
-                        </select>
-                    </label>
-                    <label class="field">
-                        <span>Adres</span>
+                        <span>Adres *</span>
                         <input type="number" name="address" min="0" value="0" required>
-                    </label>
-                    <label class="field">
-                        <span>Dlugosc</span>
-                        <input type="number" name="length" min="1" value="2" required>
                     </label>
                     <label class="field">
                         <span>Typ danych</span>
@@ -115,23 +104,8 @@
                         </select>
                     </label>
                     <label class="field">
-                        <span>Skala</span>
-                        <input type="number" name="scale" step="0.01" value="1" required>
-                    </label>
-                    <label class="field">
                         <span>Jednostka</span>
                         <input type="text" name="unit" placeholder="np. kV">
-                    </label>
-                    <label class="field">
-                        <span>Kolejnosc</span>
-                        <input type="number" name="orderIndex" min="0" value="0" required>
-                    </label>
-                    <label class="field field--full">
-                        <span>Aktywny</span>
-                        <select name="enabled">
-                            <option value="1" selected>Tak</option>
-                            <option value="0">Nie</option>
-                        </select>
                     </label>
                     <div class="form__actions field--full">
                         <button class="btn" type="submit">Dodaj rejestr</button>
