@@ -86,7 +86,24 @@
                     <button class="btn btn--ghost" id="registerClear" type="button">Wyczysc</button>
                     <div class="metrics-filter__status" id="readingsWsStatus">WebSocket: offline</div>
                 </div>
-                <div id="registerPickerList" class="register-picker__list"></div>
+                <div class="table-wrap" id="registerTableWrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Wybierz</th>
+                                <th>Nazwa</th>
+                                <th>Typ</th>
+                                <th>Adres</th>
+                                <th>Dlugosc</th>
+                                <th>Typ danych</th>
+                                <th>Skala</th>
+                                <th>Jednostka</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="registerTableBody"></tbody>
+                    </table>
+                </div>
                 <div id="registerPickerEmpty" class="empty">Wybierz miernik, aby zobaczyc rejestry.</div>
             </section>
 
@@ -95,6 +112,17 @@
                     <span class="card__eyebrow">Odczyty</span>
                     <h2>Dane z wybranych rejestrow</h2>
                     <p>Kazdy rejestr ma wlasne podsumowanie i tabele punktow.</p>
+                </div>
+                <div class="chart" id="combinedChartWrap">
+                    <div class="chart__header">
+                        <strong>Wykres laczony</strong>
+                        <label class="chart__toggle">
+                            <input type="checkbox" id="combineCharts" checked>
+                            Lacz wykresy
+                        </label>
+                    </div>
+                    <canvas id="combinedChart" width="900" height="260"></canvas>
+                    <div class="chart__legend" id="combinedLegend"></div>
                 </div>
                 <div id="registerMetricsGrid" class="metrics-grid"></div>
                 <div id="registerMetricsEmpty" class="empty">Zaznacz rejestry, aby zobaczyc odczyty.</div>

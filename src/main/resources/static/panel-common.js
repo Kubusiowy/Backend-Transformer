@@ -13,7 +13,8 @@ const STORAGE = {
 window.BT_STORAGE = STORAGE;
 
 const updateAuthFromStorage = () => {
-    const refreshToken = localStorage.getItem(STORAGE.refresh);
+    const refreshToken =
+        sessionStorage.getItem(STORAGE.refresh) || localStorage.getItem(STORAGE.refresh);
     const accessToken = sessionStorage.getItem(STORAGE.access);
     const userId = localStorage.getItem(STORAGE.user) || "(brak)";
     const role = (localStorage.getItem(STORAGE.role) || "user").toLowerCase();
@@ -88,6 +89,7 @@ const handleLogout = () => {
     localStorage.removeItem(STORAGE.role);
     localStorage.removeItem(STORAGE.email);
     localStorage.removeItem(STORAGE.lastLogin);
+    sessionStorage.removeItem(STORAGE.refresh);
     sessionStorage.removeItem(STORAGE.access);
     updateAuthFromStorage();
     window.location.href = "/static/index.html";

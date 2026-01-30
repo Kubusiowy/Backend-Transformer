@@ -33,7 +33,8 @@
     };
 
     const getAccessToken = () => sessionStorage.getItem(STORAGE.access);
-    const getRefreshToken = () => localStorage.getItem(STORAGE.refresh);
+    const getRefreshToken =
+        () => sessionStorage.getItem(STORAGE.refresh) || localStorage.getItem(STORAGE.refresh);
 
     const refreshAccessToken = async () => {
         const refreshToken = getRefreshToken();

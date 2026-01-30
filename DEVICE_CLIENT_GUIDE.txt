@@ -1,0 +1,255 @@
+Backend-Transformer – Guide for the Transformer Client (Modbus Edge)
+===================================================================
+
+This document explains how an external client (running on/near the transformer)
+should communicate with this backend. The backend DOES NOT read Modbus directly.
+The Modbus reading happens on the transformer-side client, and the client sends
+data to this backend via HTTP/WS.
+
+Contents
+--------
+1) Quick architecture overview
+2) Authentication and tokens
+3) Data model (Transformer/Meter/Register/Metric)
+4) REST API: endpoints and payloads
+5) WebSocket ingest (optional, realtime)
+6) Modbus mapping rules
+7) Recommended data keys
+8) Error handling + retry strategy
+9) Production notes (TLS, domains)
+
+
+1) Quick architecture overview
+------------------------------
+Backend (Ktor, Kotlin) exposes:
+- REST endpoints for configuration + metric ingest
+- WebSocket endpoint for metric ingest + broadcast
+- Static admin UI under /static
+
+Edge client on transformer:
+- Reads Modbus (serial RTU)
+- Uses the Meter + Register configuration from backend
+- Sends measurement points to backend
+
+The backend stores metrics in minute buckets (avg/min/max/count).
+
+
+2) Authentication and tokens
+----------------------------
+All protected endpoints require a JWT Access Token in header:
+  Authorization: Bearer <accessToken>
+
+Login:
+  POST /auth/login
+  Body: { "email": "...", "rawPassword": "..." }
+  Response: { "id": "...", "accessToken": "...", "refreshToken": "...", "role": "ADMIN|USER" }
+
+Refresh:
+  POST /auth/refresh
+  Body: { "refreshToken": "..." }
+  Response: { "accessToken": "..." }
+
+Notes:
+- Access token is short-lived.
+- Refresh token should be stored securely on the device.
+- On any 401 response, refresh the access token and retry once.
+
+
+3) Data model
+-------------
+Transformer (UUID):
+  - logical device/group
+  - owned by a user
+
+Meter (Long):
+  - belongs to transformer
+  - defines Modbus serial configuration
+  - fields:
+    name, deviceCode, enabled
+    serialPort, baudRate, parity, stopBits, slaveId, pollIntervalMs
+
+Register (Long):
+  - belongs to meter
+  - defines Modbus register to read
+  - fields:
+    name, registerType (INPUT/HOLDING), address, length
+    dataType (INT16/INT32/FLOAT32), scale, unit, enabled, orderIndex
+
+Metric:
+  - stored per transformerId + key
+  - aggregated by minute bucket
+  - fields: avg/min/max/count + optional unit/label
+
+
+4) REST API – endpoints and payloads
+------------------------------------
+Base URL example (local):
+  http://localhost:8080
+
+Always add:
+  Authorization: Bearer <accessToken>
+  Content-Type: application/json
+
+Transformers:
+  GET  /transformers
+  POST /transformers
+    { "name": "T1", "location": "Room A" }
+  GET  /transformers/{id}
+  PUT  /transformers/{id}
+    { "name": "T1 new", "location": "Room B" }
+  DELETE /transformers/{id}
+
+Meters:
+  GET  /transformers/{transformerId}/meters
+  POST /transformers/{transformerId}/meters
+    {
+      "name": "Meter 01",
+      "deviceCode": "MTR-01",
+      "enabled": true,
+      "serialPort": "/dev/ttyUSB0",
+      "baudRate": 9600,
+      "parity": "NONE",
+      "stopBits": 1,
+      "slaveId": 1,
+      "pollIntervalMs": 1000
+    }
+
+  GET  /transformers/{transformerId}/meters/{meterId}
+  PUT  /transformers/{transformerId}/meters/{meterId}
+  DELETE /transformers/{transformerId}/meters/{meterId}
+
+Registers:
+  GET  /meters/{meterId}/registers
+  POST /meters/{meterId}/registers
+    {
+      "name": "Voltage L1",
+      "registerType": "INPUT",
+      "address": 30001,
+      "length": 2,
+      "dataType": "FLOAT32",
+      "scale": 1.0,
+      "unit": "V",
+      "enabled": true,
+      "orderIndex": 1
+    }
+
+  GET  /meters/{meterId}/registers/{registerId}
+  PUT  /meters/{meterId}/registers/{registerId}
+  DELETE /meters/{meterId}/registers/{registerId}
+
+Metrics (HTTP ingest):
+  POST /transformers/{transformerId}/metrics
+    {
+      "key": "meter01.voltage_L1",
+      "value": 231.6,
+      "timestamp": "2026-01-30T10:15:30Z",
+      "unit": "V",
+      "label": "Voltage L1"
+    }
+
+  GET /transformers/{transformerId}/metrics?key=...&limit=...&from=...&to=...&order=desc
+  GET /transformers/{transformerId}/metrics/keys
+
+Timestamp format:
+- ISO-8601 with timezone recommended: 2026-01-30T10:15:30Z
+- If omitted, backend uses current UTC time.
+
+
+5) WebSocket ingest (optional, realtime)
+----------------------------------------
+Use WS to send live measurements and broadcast to all clients.
+
+Connect:
+  ws://<host>/ws/transformers/{transformerId}/metrics?token=<JWT>
+
+Send text frames with JSON:
+  {
+    "key": "meter01.voltage_L1",
+    "value": 231.6,
+    "timestamp": "2026-01-30T10:15:30Z",
+    "unit": "V",
+    "label": "Voltage L1"
+  }
+
+Server will:
+- validate permissions
+- upsert into minute buckets
+- broadcast MetricPointResponse to all WS clients
+
+
+6) Modbus mapping rules
+-----------------------
+Each Meter defines serial settings:
+  serialPort, baudRate, parity (NONE/EVEN/ODD), stopBits, slaveId
+
+Each Register defines how to read:
+  registerType:
+    - INPUT  -> Modbus function 0x04 (Read Input Registers)
+    - HOLDING -> Modbus function 0x03 (Read Holding Registers)
+  address: Modbus address
+  length: number of 16-bit words
+  dataType: INT16 | INT32 | FLOAT32
+  scale: multiply decoded value by scale
+
+Client should:
+1) Open serial port with meter settings
+2) For each enabled register:
+   - read function based on registerType
+   - decode based on dataType
+   - apply scale
+   - send metric
+
+Note:
+- Endianness is not stored in backend, so the client must know the device.
+- If your devices use word swap or different byte order, handle in the client.
+
+
+7) Recommended metric keys
+--------------------------
+Keys are free-form strings. Use a stable scheme to avoid collisions:
+
+Option A:
+  <deviceCode>.<registerName>
+  Example: "MTR-01.voltage_L1"
+
+Option B:
+  meter-<meterId>.<registerName>
+  Example: "meter-12.voltage_L1"
+
+Keep the same key for the same physical measurement.
+
+
+8) Error handling + retry strategy
+----------------------------------
+HTTP:
+- 401 -> refresh token, retry once
+- 403 -> wrong user or transformerId, stop
+- 404 -> invalid transformer/meter/register, stop
+- 5xx -> retry with backoff
+
+Offline:
+- buffer readings locally
+- send in FIFO when connection is back
+- avoid infinite growth (set a max queue size)
+
+Backend stores aggregated values per minute:
+Multiple posts in the same minute update avg/min/max/count, not duplicates.
+
+
+9) Production notes (TLS, domains)
+----------------------------------
+In production:
+- use HTTPS/WSS
+- use proper domain + TLS certificates
+- use firewall to restrict API access
+- never expose refresh tokens in logs
+
+Local dev example:
+  HTTP: http://localhost:8080
+  WS:   ws://localhost:8080/ws/transformers/{transformerId}/metrics?token=...
+
+Production example:
+  HTTP: https://api.example.com
+  WS:   wss://api.example.com/ws/transformers/{transformerId}/metrics?token=...
+
+EOF

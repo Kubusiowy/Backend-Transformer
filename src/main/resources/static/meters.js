@@ -30,7 +30,7 @@ const setMeterResult = (message, state) => {
 const getSelectedTransformerId = () => selectedTransformerId;
 
 const setSelectedTransformerId = (id) => {
-    selectedTransformerId = id || null;
+    selectedTransformerId = id ? String(id) : null;
     if (window.BTData) {
         window.BTData.setSelectedId(selectedTransformerId);
     }
@@ -40,13 +40,15 @@ const getSelectedMeterInfo = () => (window.BTData ? window.BTData.getSelectedMet
 
 const setSelectedMeterInfo = (transformerId, meterId) => {
     if (window.BTData) {
-        window.BTData.setSelectedMeterInfo(transformerId, meterId);
+        const normalizedTransformer = transformerId ? String(transformerId) : null;
+        const normalizedMeter = meterId ? String(meterId) : null;
+        window.BTData.setSelectedMeterInfo(normalizedTransformer, normalizedMeter);
     }
 };
 
 const getSelectedTransformer = () => {
     const id = getSelectedTransformerId();
-    return transformers.find((t) => t.id === id) || null;
+    return transformers.find((t) => String(t.id) === String(id)) || null;
 };
 
 const getSelectedMeter = () => {
@@ -58,7 +60,7 @@ const getSelectedMeter = () => {
     if (!info || info.transformerId !== selectedId) {
         return meters[0] || null;
     }
-    return meters.find((m) => m.id === info.meterId) || meters[0] || null;
+    return meters.find((m) => String(m.id) === String(info.meterId)) || meters[0] || null;
 };
 
 const renderMeterSelect = () => {
@@ -80,17 +82,17 @@ const renderMeterSelect = () => {
     meterSelect.disabled = false;
     meters.forEach((meter) => {
         const option = document.createElement("option");
-        option.value = meter.id;
+        option.value = String(meter.id);
         option.textContent = `${meter.name} (${meter.deviceCode})`;
         meterSelect.append(option);
     });
 
     const selected = getSelectedMeter();
     if (selected) {
-        meterSelect.value = selected.id;
+        meterSelect.value = String(selected.id);
         meterSelectHint.textContent = `Wybrany miernik: ${selected.name}.`;
     } else {
-        meterSelect.value = meters[0].id;
+        meterSelect.value = String(meters[0].id);
         setSelectedMeterInfo(getSelectedTransformerId(), meters[0].id);
         meterSelectHint.textContent = `Wybrano pierwszy miernik: ${meters[0].name}.`;
     }
@@ -151,7 +153,7 @@ const renderMeters = () => {
     meters.forEach((meter) => {
         const item = document.createElement("div");
         item.className = "list__item";
-        if (info && info.transformerId === selectedTransformer.id && info.meterId === meter.id) {
+        if (info && info.transformerId === selectedTransformer.id && String(info.meterId) === String(meter.id)) {
             item.classList.add("list__item--active");
         }
 
@@ -254,7 +256,7 @@ const renderTransformerSelect = () => {
     const selectedId = getSelectedTransformerId();
     transformers.forEach((transformer) => {
         const option = document.createElement("option");
-        option.value = transformer.id;
+        option.value = String(transformer.id);
         option.textContent = `${transformer.name} (${transformer.id})`;
         transformerSelect.append(option);
     });
@@ -303,7 +305,7 @@ const fetchMeters = async () => {
         }
         const info = getSelectedMeterInfo();
         const matchesTransformer = info && info.transformerId === selected.id;
-        const exists = matchesTransformer && meters.find((m) => m.id === info.meterId);
+        const exists = matchesTransformer && meters.find((m) => String(m.id) === String(info.meterId));
         if (!exists) {
             const next = meters[0]?.id || null;
             setSelectedMeterInfo(selected.id, next);

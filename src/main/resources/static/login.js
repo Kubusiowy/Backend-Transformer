@@ -5,6 +5,8 @@ const formTitle = document.getElementById("formTitle");
 const formSubtitle = document.getElementById("formSubtitle");
 const submitBtn = document.getElementById("submitBtn");
 const repeatField = document.getElementById("repeatField");
+const rememberRow = document.getElementById("rememberRow");
+const rememberBox = document.getElementById("rememberMe");
 const switcher = document.getElementById("modeSwitch");
 const switchButtons = document.querySelectorAll(".switch__btn");
 
@@ -14,7 +16,8 @@ const STORAGE = {
     user: "bt_user_id",
     role: "bt_role",
     email: "bt_user_email",
-    lastLogin: "bt_last_login"
+    lastLogin: "bt_last_login",
+    remember: "bt_remember_me"
 };
 
 let mode = "login";
@@ -40,12 +43,18 @@ const setMode = (nextMode) => {
         formSubtitle.textContent = "Utworz konto i od razu wejdziesz do panelu.";
         submitBtn.textContent = "Zarejestruj i wejdz";
         repeatField.style.display = "grid";
+        if (rememberRow) {
+            rememberRow.style.display = "flex";
+        }
         setResult("Wypelnij dane rejestracji.", null);
     } else {
         formTitle.textContent = "Zaloguj sie";
         formSubtitle.textContent = "Podaj email i haslo, aby wejsc do panelu.";
         submitBtn.textContent = "Zaloguj sie";
         repeatField.style.display = "none";
+        if (rememberRow) {
+            rememberRow.style.display = "flex";
+        }
         setResult("Wprowadz dane logowania.", null);
     }
 };
@@ -68,7 +77,7 @@ const request = async (url, payload) => {
     return data;
 };
 
-const saveTokens = (loginResult, email) => {
+const saveTokens = (loginResult, email, remember) => {
     const access = loginResult?.accessToken || null;
     const refresh = loginResult?.refreshToken || null;
     const userId = loginResult?.id || null;
@@ -86,7 +95,16 @@ const saveTokens = (loginResult, email) => {
         "";
 
     if (refresh) {
-        localStorage.setItem(STORAGE.refresh, refresh);
+        if (remember) {
+            localStorage.setItem(STORAGE.refresh, refresh);
+            sessionStorage.removeItem(STORAGE.refresh);
+        } else {
+            sessionStorage.setItem(STORAGE.refresh, refresh);
+            localStorage.removeItem(STORAGE.refresh);
+        }
+    } else {
+        localStorage.removeItem(STORAGE.refresh);
+        sessionStorage.removeItem(STORAGE.refresh);
     }
     if (access) {
         sessionStorage.setItem(STORAGE.access, access);
@@ -100,6 +118,7 @@ const saveTokens = (loginResult, email) => {
         localStorage.setItem(STORAGE.email, resolvedEmail);
     }
     localStorage.setItem(STORAGE.lastLogin, new Date().toISOString());
+    localStorage.setItem(STORAGE.remember, remember ? "1" : "0");
 
     if (userId) {
         const usersKey = "bt_users";
@@ -159,7 +178,8 @@ form.addEventListener("submit", async (event) => {
 
         const loginPayload = { email, rawPassword: password };
         const loginResult = await request("/auth/login", loginPayload);
-        saveTokens(loginResult, email);
+        const remember = Boolean(rememberBox?.checked);
+        saveTokens(loginResult, email, remember);
 
         setResult("Zalogowano. Przekierowuje do panelu...", "result--success");
         window.location.href = "/static/panel.html";
@@ -174,6 +194,14 @@ switchButtons.forEach((btn) => {
 
 setMode("login");
 
+if (rememberBox) {
+    const stored = localStorage.getItem(STORAGE.remember);
+    rememberBox.checked = stored === "1";
+    rememberBox.addEventListener("change", () => {
+        localStorage.setItem(STORAGE.remember, rememberBox.checked ? "1" : "0");
+    });
+}
+
 const notice = sessionStorage.getItem("bt_login_notice");
 if (notice) {
     sessionStorage.removeItem("bt_login_notice");
@@ -181,7 +209,8 @@ if (notice) {
 }
 
 const autoLogin = async () => {
-    const refreshToken = localStorage.getItem(STORAGE.refresh);
+    const refreshToken =
+        sessionStorage.getItem(STORAGE.refresh) || localStorage.getItem(STORAGE.refresh);
     if (!refreshToken || !window.BT_API?.refreshAccessToken) {
         return;
     }
