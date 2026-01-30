@@ -7,6 +7,10 @@ const selectionHint = document.getElementById("readingsSelectionHint");
 const statusBox = document.getElementById("readingsStatus");
 const statusBody = document.getElementById("readingsStatusBody");
 const wsStatus = document.getElementById("readingsWsStatus");
+const errorsList = document.getElementById("transformerErrorsList");
+const errorsEmpty = document.getElementById("transformerErrorsEmpty");
+const errorsHint = document.getElementById("transformerErrorsHint");
+const errorsRefreshBtn = document.getElementById("transformerErrorsRefresh");
 
 const registerTableBody = document.getElementById("registerTableBody");
 const registerTableWrap = document.getElementById("registerTableWrap");
@@ -27,6 +31,7 @@ let metricKeys = [];
 let selectedRegisterKeys = new Set();
 let metricsByKey = {};
 let ws = null;
+let transformerErrors = [];
 
 let selectedTransformerId = window.BTData ? window.BTData.getSelectedId() : null;
 let selectedMeterInfo = window.BTData ? window.BTData.getSelectedMeterInfo() : null;
@@ -54,12 +59,55 @@ const setWsStatus = (message) => {
     }
 };
 
+const setErrorsHint = (message) => {
+    if (errorsHint) {
+        errorsHint.textContent = message;
+    }
+};
+
 const formatValue = (value, unit) => {
     if (value === null || value === undefined) {
         return "(brak)";
     }
     const formatted = typeof value === "number" ? value.toFixed(2) : String(value);
     return unit ? `${formatted} ${unit}` : formatted;
+};
+
+const formatTimestamp = (value) => {
+    if (!value) {
+        return "(brak)";
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return String(value);
+    }
+    return parsed.toLocaleString("pl-PL");
+};
+
+const getErrorStatusLabel = (status) => {
+    switch (String(status || "").toUpperCase()) {
+        case "ERROR":
+            return "Blad";
+        case "WARNING":
+            return "Ostrzezenie";
+        case "INFO":
+            return "Informacja";
+        default:
+            return status || "Nieznany";
+    }
+};
+
+const getErrorStatusClass = (status) => {
+    switch (String(status || "").toUpperCase()) {
+        case "ERROR":
+            return "tag tag--error";
+        case "WARNING":
+            return "tag tag--warn";
+        case "INFO":
+            return "tag tag--info";
+        default:
+            return "tag";
+    }
 };
 
 const getSelectedTransformerId = () => selectedTransformerId;
@@ -365,6 +413,76 @@ const renderMetricsGrid = () => {
     renderCombinedChart();
 };
 
+const renderTransformerErrors = () => {
+    if (!errorsList || !errorsEmpty) {
+        return;
+    }
+    errorsList.innerHTML = "";
+    const transformer = getSelectedTransformer();
+    if (!transformer) {
+        errorsEmpty.textContent = "Wybierz transformator, aby zobaczyc bledy.";
+        errorsEmpty.style.display = "block";
+        errorsList.style.display = "none";
+        setErrorsHint("Wybierz transformator, aby zobaczyc bledy.");
+        return;
+    }
+    if (!transformerErrors.length) {
+        errorsEmpty.textContent = "Brak bledow.";
+        errorsEmpty.style.display = "block";
+        errorsList.style.display = "none";
+        return;
+    }
+    errorsEmpty.style.display = "none";
+    errorsList.style.display = "grid";
+
+    transformerErrors.forEach((error) => {
+        const item = document.createElement("div");
+        item.className = "list__item";
+
+        const main = document.createElement("div");
+        main.className = "list__main";
+
+        const name = document.createElement("div");
+        name.className = "list__name";
+        name.textContent = `${error.code}: ${error.message}`;
+
+        const meta = document.createElement("div");
+        meta.className = "list__meta";
+        meta.textContent = `Zgloszono: ${formatTimestamp(error.createdAt)}`;
+
+        const tags = document.createElement("div");
+        tags.className = "list__tags";
+
+        const statusTag = document.createElement("span");
+        statusTag.className = getErrorStatusClass(error.status);
+        statusTag.textContent = getErrorStatusLabel(error.status);
+        tags.append(statusTag);
+
+        main.append(name, meta, tags);
+        item.append(main);
+        errorsList.append(item);
+    });
+};
+
+const loadTransformerErrors = async () => {
+    const transformer = getSelectedTransformer();
+    if (!transformer || !window.BT_API?.request) {
+        transformerErrors = [];
+        renderTransformerErrors();
+        return;
+    }
+    try {
+        const data = await window.BT_API.request("GET", `/transformers/${transformer.id}/errors`);
+        transformerErrors = Array.isArray(data) ? data : [];
+        setErrorsHint(`Wybrany transformator: ${transformer.name}.`);
+        renderTransformerErrors();
+    } catch (error) {
+        transformerErrors = [];
+        renderTransformerErrors();
+        setErrorsHint(error?.message || "Blad pobierania bledow transformatora.");
+    }
+};
+
 const loadTransformers = async () => {
     if (!window.BT_API?.request) {
         setStatus("Brak konfiguracji API.", "result--error");
@@ -386,11 +504,14 @@ const loadTransformers = async () => {
             clearWs();
             meters = [];
             registers = [];
+            transformerErrors = [];
             renderMeterSelect();
             renderRegisterPicker();
             resetMetrics();
+            renderTransformerErrors();
             return;
         }
+        await loadTransformerErrors();
         await loadMeters();
     } catch (error) {
         setStatus(error?.message || "Blad pobierania transformatorow.", "result--error");
@@ -730,7 +851,9 @@ if (transformerSelect) {
         renderMeterSelect();
         renderRegisterPicker();
         renderMetricsGrid();
+        renderTransformerErrors();
         clearWs();
+        await loadTransformerErrors();
         await loadMeters();
         connectWs();
     });
@@ -750,6 +873,10 @@ if (meterSelect) {
 
 if (refreshBtn) {
     refreshBtn.addEventListener("click", () => loadTransformers());
+}
+
+if (errorsRefreshBtn) {
+    errorsRefreshBtn.addEventListener("click", () => loadTransformerErrors());
 }
 
 if (loadBtn) {

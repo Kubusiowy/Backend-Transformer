@@ -46,3 +46,39 @@ If the server starts successfully, you'll see the following output:
 2024-12-04 14:32:45.682 [main] INFO  Application - Responding at http://0.0.0.0:8080
 ```
 
+## Transformer errors API (for client implementers)
+
+Backend exposes a dedicated list of transformer errors that the frontend can read and display.
+
+### GET /transformers/{id}/errors
+
+Returns a list of current errors for the selected transformer.
+
+Response example:
+```json
+[
+  {
+    "id": 12,
+    "transformerId": "24c9d156-b006-4441-924b-3e6bf1e9dddb",
+    "code": "TEMP_HIGH",
+    "message": "Przekroczona temperatura uzwojenia",
+    "status": "ERROR",
+    "createdAt": "2026-01-30T12:41:18.554"
+  }
+]
+```
+
+`status` is one of: `INFO`, `WARNING`, `ERROR`.
+
+### POST /transformers/{id}/errors
+
+Creates a new error entry (useful for device or admin tools).
+
+Request body:
+```json
+{
+  "code": "COMM_TIMEOUT",
+  "message": "Brak odpowiedzi z miernika",
+  "status": "WARNING"
+}
+```

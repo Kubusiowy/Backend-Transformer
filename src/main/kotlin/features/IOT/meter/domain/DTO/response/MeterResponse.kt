@@ -1,6 +1,7 @@
 package com.example.features.IOT.meter.domain.DTO.response
 
 import com.example.core.db.exposedTables.Parity
+import com.example.core.db.exposedTables.ByteOrder
 import com.example.core.util.UUIDSerializer
 import kotlinx.serialization.Serializable
 import java.util.UUID
@@ -15,8 +16,10 @@ data class MeterResponse(
     val enabled: Boolean,
     val serialPort: String,
     val baudRate: Int,
+    val dataBits: Int,
     val parity: Parity,
     val stopBits: Int,
     val slaveId: Int,
+    val byteOrder: ByteOrder,
     val pollIntervalMs: Int,
 )

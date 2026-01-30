@@ -2,9 +2,12 @@ package com.example.features.IOT.transformer.route
 
 import com.example.core.model.user.Role.UserRole
 import com.example.core.model.user.jwt.UserPrincipal
+import com.example.features.IOT.transformer.data.TransformerErrorRepository
 import com.example.features.IOT.transformer.data.TransformerRepository
+import com.example.features.IOT.transformer.domain.DTO.request.TransformerErrorCreateRequest
 import com.example.features.IOT.transformer.domain.DTO.request.TransformerRequest
 import com.example.features.IOT.transformer.domain.DTO.request.TransformerUpdateRequest
+import com.example.features.IOT.transformer.domain.DTO.response.TransformerErrorResponse
 import com.example.features.IOT.transformer.domain.DTO.response.TransformerResponse
 import com.example.plugins.StatusPage.errors.BadRequest
 import com.example.plugins.StatusPage.errors.Forbidden
@@ -25,6 +28,7 @@ import java.util.UUID
 
 fun Route.transformerRoute() {
     val repo: TransformerRepository by inject()
+    val errorRepo: TransformerErrorRepository by inject()
 
     fun getPrincipal(call: ApplicationCall): UserPrincipal =
         call.principal<UserPrincipal>() ?: throw Unauthorized("Unauthorized")
@@ -57,6 +61,15 @@ fun Route.transformerRoute() {
         location = location
     )
 
+    fun TransformerErrorRepository.TransformerErrorRecord.toResponse() = TransformerErrorResponse(
+        id = id,
+        transformerId = transformerId.toString(),
+        code = code,
+        message = message,
+        status = status,
+        createdAt = createdAt.toString()
+    )
+
     get("/transformer") {
         val principal = getPrincipal(call)
         val transformers = listTransformers(principal, call.request.queryParameters["userId"]).map { it.toResponse() }
@@ -85,6 +98,32 @@ fun Route.transformerRoute() {
         val transformer = repo.findById(id) ?: throw NotFound("Transformer not found")
         ensureAccess(transformer, principal)
         call.respond(HttpStatusCode.OK, transformer.toResponse())
+    }
+
+    get("/transformers/{id}/errors") {
+        val principal = getPrincipal(call)
+        val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+            ?: throw BadRequest("Invalid transformer id")
+        val transformer = repo.findById(id) ?: throw NotFound("Transformer not found")
+        ensureAccess(transformer, principal)
+        val errors = errorRepo.listByTransformer(id).map { it.toResponse() }
+        call.respond(HttpStatusCode.OK, errors)
+    }
+
+    post("/transformers/{id}/errors") {
+        val principal = getPrincipal(call)
+        val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+            ?: throw BadRequest("Invalid transformer id")
+        val transformer = repo.findById(id) ?: throw NotFound("Transformer not found")
+        ensureAccess(transformer, principal)
+        val req = call.receive<TransformerErrorCreateRequest>()
+        val code = req.code.trim()
+        val message = req.message.trim()
+        if (code.isBlank() || message.isBlank()) {
+            throw BadRequest("Code and message are required")
+        }
+        val created = errorRepo.create(id, code, message, req.status)
+        call.respond(HttpStatusCode.Created, created.toResponse())
     }
 
     post("/transformer") {

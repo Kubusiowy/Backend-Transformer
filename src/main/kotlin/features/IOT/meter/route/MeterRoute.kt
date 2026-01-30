@@ -51,9 +51,11 @@ fun Route.meterRoute() {
         enabled = enabled,
         serialPort = serialPort,
         baudRate = baudRate,
+        dataBits = dataBits,
         parity = parity,
         stopBits = stopBits,
         slaveId = slaveId,
+        byteOrder = byteOrder,
         pollIntervalMs = pollIntervalMs
     )
 
@@ -95,9 +97,11 @@ fun Route.meterRoute() {
                 enabled = req.enabled,
                 serialPort = req.serialPort.trim(),
                 baudRate = req.baudRate,
+                dataBits = req.dataBits,
                 parity = req.parity,
                 stopBits = req.stopBits,
                 slaveId = req.slaveId,
+                byteOrder = req.byteOrder,
                 pollIntervalMs = req.pollIntervalMs,
             )
             call.respond(HttpStatusCode.Created, created.toResponse())
@@ -135,9 +139,11 @@ fun Route.meterRoute() {
                 enabled = req.enabled ?: existing.enabled,
                 serialPort = req.serialPort?.trim()?.takeIf { it.isNotBlank() } ?: existing.serialPort,
                 baudRate = req.baudRate ?: existing.baudRate,
+                dataBits = req.dataBits ?: existing.dataBits,
                 parity = req.parity ?: existing.parity,
                 stopBits = req.stopBits ?: existing.stopBits,
                 slaveId = req.slaveId ?: existing.slaveId,
+                byteOrder = req.byteOrder ?: existing.byteOrder,
                 pollIntervalMs = req.pollIntervalMs ?: existing.pollIntervalMs,
             )
             meterRepo.update(meterId, updated)

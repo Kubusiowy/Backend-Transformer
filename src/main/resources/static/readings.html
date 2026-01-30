@@ -77,6 +77,20 @@
 
             <section class="card">
                 <div class="card__header">
+                    <span class="card__eyebrow">Diagnostyka</span>
+                    <h2>Bledy transformatora</h2>
+                    <p>Lista biezacych bledow i statusow zwracanych przez backend.</p>
+                </div>
+                <div class="form__actions">
+                    <button class="btn btn--ghost" id="transformerErrorsRefresh" type="button">Odswiez bledy</button>
+                </div>
+                <div class="note" id="transformerErrorsHint">Wybierz transformator, aby zobaczyc bledy.</div>
+                <div id="transformerErrorsList" class="list"></div>
+                <div id="transformerErrorsEmpty" class="empty">Brak bledow.</div>
+            </section>
+
+            <section class="card">
+                <div class="card__header">
                     <span class="card__eyebrow">Rejestry</span>
                     <h2>Wybierz rejestry do odczytu</h2>
                     <p>Mozesz zaznaczyc kilka rejestrow naraz. Dane pokaza sie ponizej.</p>

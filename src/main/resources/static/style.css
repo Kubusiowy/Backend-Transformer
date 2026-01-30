@@ -822,6 +822,21 @@ body.a11y-reduce-motion * {
     letter-spacing: 0.08em;
 }
 
+.tag--error {
+    background: rgba(220, 38, 38, 0.12);
+    color: var(--error);
+}
+
+.tag--warn {
+    background: rgba(245, 158, 11, 0.16);
+    color: var(--warning);
+}
+
+.tag--info {
+    background: rgba(14, 165, 233, 0.12);
+    color: var(--accent-strong);
+}
+
 .list__actions {
     display: flex;
     gap: 8px;

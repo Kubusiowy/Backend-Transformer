@@ -49,9 +49,11 @@ CREATE TABLE `meter` (
   `enabled` tinyint(1) NOT NULL DEFAULT '1',
   `serial_port` varchar(64) NOT NULL,
   `baud_rate` int NOT NULL,
+  `data_bits` int NOT NULL DEFAULT '8',
   `parity` enum('NONE','EVEN','ODD') NOT NULL DEFAULT 'NONE',
   `stop_bits` int NOT NULL DEFAULT '1',
   `slave_id` tinyint UNSIGNED NOT NULL,
+  `byte_order` enum('BIG_ENDIAN','LITTLE_ENDIAN') NOT NULL DEFAULT 'BIG_ENDIAN',
   `poll_interval_ms` int NOT NULL DEFAULT '1000',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -152,6 +154,21 @@ CREATE TABLE `transformers` (
 -- --------------------------------------------------------
 
 --
+-- Struktura tabeli dla tabeli `transformer_errors`
+--
+
+CREATE TABLE `transformer_errors` (
+  `id` bigint NOT NULL,
+  `transformer_id` char(36) NOT NULL,
+  `code` varchar(64) NOT NULL,
+  `message` varchar(255) NOT NULL,
+  `status` enum('INFO','WARNING','ERROR') NOT NULL DEFAULT 'ERROR',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Struktura tabeli dla tabeli `users`
 --
 
@@ -221,6 +238,13 @@ ALTER TABLE `transformers`
   ADD KEY `idx_transformers_user_id` (`user_id`);
 
 --
+-- Indeksy dla tabeli `transformer_errors`
+--
+ALTER TABLE `transformer_errors`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_transformer_errors_transformer_id` (`transformer_id`);
+
+--
 -- Indeksy dla tabeli `users`
 --
 ALTER TABLE `users`
@@ -248,6 +272,12 @@ ALTER TABLE `meter_register`
 --
 ALTER TABLE `refresh_sessions`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+
+--
+-- AUTO_INCREMENT dla tabeli `transformer_errors`
+--
+ALTER TABLE `transformer_errors`
+  MODIFY `id` bigint NOT NULL AUTO_INCREMENT;
 
 --
 -- Ograniczenia dla zrzutów tabel
@@ -288,6 +318,12 @@ ALTER TABLE `refresh_sessions`
 --
 ALTER TABLE `transformers`
   ADD CONSTRAINT `fk_transformers_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Ograniczenia dla tabeli `transformer_errors`
+--
+ALTER TABLE `transformer_errors`
+  ADD CONSTRAINT `fk_transformer_errors_transformer` FOREIGN KEY (`transformer_id`) REFERENCES `transformers` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

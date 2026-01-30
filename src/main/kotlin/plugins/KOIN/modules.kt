@@ -11,6 +11,7 @@ import com.example.features.auth.refresh.domain.RefreshService
 import com.example.features.auth.register.domain.RegisterService
 import com.example.features.IOT.meter.data.MeterRepository
 import com.example.features.IOT.metrics.data.MetricsRepository
+import com.example.features.IOT.transformer.data.TransformerErrorRepository
 import com.example.features.IOT.transformer.data.TransformerRepository
 import com.example.plugins.Security.JwtService
 import com.example.plugins.Security.JwtServiceImpl
@@ -37,6 +38,7 @@ val AuthModule = module {
 
 val IotModule = module {
     single { TransformerRepository() }
+    single { TransformerErrorRepository() }
     single { MeterRepository() }
     single { MetricsRepository() }
 }

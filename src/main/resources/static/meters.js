@@ -11,10 +11,53 @@ const meterSelectionAlert = document.getElementById("meterSelectionAlert");
 const meterSelect = document.getElementById("meterSelect");
 const meterRefresh = document.getElementById("meterRefresh");
 const meterSelectHint = document.getElementById("meterSelectHint");
+const serialPortOptions = document.getElementById("serialPortOptions");
 
 let transformers = [];
 let meters = [];
 let selectedTransformerId = window.BTData ? window.BTData.getSelectedId() : null;
+
+const buildDeviceCode = (name) => {
+    const base = String(name || "")
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    const fallback = `MTR-${new Date().getFullYear()}`;
+    const code = base ? `MTR-${base}` : fallback;
+    return code.slice(0, 64);
+};
+
+const buildSerialPortOptions = () => {
+    const options = [];
+    for (let i = 1; i <= 20; i += 1) {
+        options.push(`COM${i}`);
+    }
+    for (let i = 0; i <= 9; i += 1) {
+        options.push(`/dev/ttyUSB${i}`);
+    }
+    for (let i = 1; i <= 4; i += 1) {
+        const suffix = String(i).padStart(4, "0");
+        options.push(`/dev/tty.usbserial-${suffix}`);
+        options.push(`/dev/tty.usbmodem-${suffix}`);
+        options.push(`/dev/cu.usbserial-${suffix}`);
+        options.push(`/dev/cu.usbmodem-${suffix}`);
+    }
+    return options;
+};
+
+const renderSerialPortOptions = () => {
+    if (!serialPortOptions) {
+        return;
+    }
+    serialPortOptions.innerHTML = "";
+    const ports = buildSerialPortOptions();
+    ports.forEach((port) => {
+        const option = document.createElement("option");
+        option.value = port;
+        serialPortOptions.append(option);
+    });
+};
 
 const setMeterResult = (message, state) => {
     if (!meterResultBody || !meterResult) {
@@ -362,38 +405,45 @@ if (meterForm) {
         event.preventDefault();
         const formData = new FormData(meterForm);
         const name = String(formData.get("name") || "").trim();
-        const deviceCode = String(formData.get("deviceCode") || "").trim();
         const serialPort = String(formData.get("serialPort") || "").trim();
         const baudRate = Number(formData.get("baudRate") || 0);
+        const dataBits = Number(formData.get("dataBits") || 0);
         const parity = String(formData.get("parity") || "NONE");
         const stopBits = Number(formData.get("stopBits") || 1);
         const slaveId = Number(formData.get("slaveId") || 0);
+        const byteOrder = String(formData.get("byteOrder") || "BIG_ENDIAN");
         const pollIntervalMs = Number(formData.get("pollIntervalMs") || 1000);
         const enabled = String(formData.get("enabled") || "1") === "1";
 
-        if (!name || !deviceCode || !serialPort || !baudRate || !slaveId) {
+        if (!name || !serialPort || !baudRate || !dataBits || !slaveId) {
             setMeterResult("Uzupelnij wymagane pola miernika.", "result--error");
             return;
         }
+
+        const deviceCode = buildDeviceCode(name);
 
         addMeter({
             name,
             deviceCode,
             serialPort,
             baudRate,
+            dataBits,
             parity,
             stopBits,
             slaveId,
+            byteOrder,
             pollIntervalMs,
             enabled
         });
 
         meterForm.reset();
         meterForm.querySelector("[name=baudRate]").value = "9600";
+        meterForm.querySelector("[name=dataBits]").value = "8";
         meterForm.querySelector("[name=pollIntervalMs]").value = "1000";
         meterForm.querySelector("[name=slaveId]").value = "1";
         meterForm.querySelector("[name=parity]").value = "NONE";
         meterForm.querySelector("[name=stopBits]").value = "1";
+        meterForm.querySelector("[name=byteOrder]").value = "BIG_ENDIAN";
         meterForm.querySelector("[name=enabled]").value = "1";
     });
 }
@@ -420,4 +470,5 @@ if (meterRefresh) {
     meterRefresh.addEventListener("click", () => fetchMeters());
 }
 
+renderSerialPortOptions();
 fetchTransformers();

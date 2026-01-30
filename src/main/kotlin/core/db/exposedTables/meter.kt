@@ -11,6 +11,12 @@ enum class Parity {
     ODD
 }
 
+@Serializable
+enum class ByteOrder {
+    BIG_ENDIAN,
+    LITTLE_ENDIAN
+}
+
 object Meter : Table("meter") {
     val id = long("id").autoIncrement()
     val transformerId = char("transformer_id", 36).index("idx_meter_transformer_id")
@@ -19,9 +25,11 @@ object Meter : Table("meter") {
     val enabled = bool("enabled").default(true)
     val serialPort = varchar("serial_port", 64)
     val baudRate = integer("baud_rate")
+    val dataBits = integer("data_bits").default(8)
     val parity = enumerationByName("parity", 8, Parity::class).default(Parity.NONE)
     val stopBits = integer("stop_bits").default(1)
     val slaveId = integer("slave_id")
+    val byteOrder = enumerationByName("byte_order", 16, ByteOrder::class).default(ByteOrder.BIG_ENDIAN)
     val pollIntervalMs = integer("poll_interval_ms").default(1000)
     val createdAt = timestamp("created_at")
     val updatedAt = timestamp("updated_at")

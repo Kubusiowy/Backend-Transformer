@@ -1,5 +1,6 @@
 package com.example.features.IOT.meter.domain.DTO.request
 
+import com.example.core.db.exposedTables.ByteOrder
 import com.example.core.db.exposedTables.Parity
 import kotlinx.serialization.Serializable
 
@@ -10,8 +11,10 @@ data class MeterUpdateRequest(
     val enabled: Boolean? = null,
     val serialPort: String? = null,
     val baudRate: Int? = null,
+    val dataBits: Int? = null,
     val parity: Parity? = null,
     val stopBits: Int? = null,
     val slaveId: Int? = null,
+    val byteOrder: ByteOrder? = null,
     val pollIntervalMs: Int? = null,
 )

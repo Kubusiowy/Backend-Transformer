@@ -1,6 +1,7 @@
 package com.example.features.IOT.meter.data
 
 import com.example.core.db.dbQuery
+import com.example.core.db.exposedTables.ByteOrder
 import com.example.core.db.exposedTables.Meter
 import com.example.core.db.exposedTables.MeterRegister
 import com.example.core.db.exposedTables.Parity
@@ -24,9 +25,11 @@ class MeterRepository {
         val enabled: Boolean,
         val serialPort: String,
         val baudRate: Int,
+        val dataBits: Int,
         val parity: Parity,
         val stopBits: Int,
         val slaveId: Int,
+        val byteOrder: ByteOrder,
         val pollIntervalMs: Int,
     )
 
@@ -52,9 +55,11 @@ class MeterRepository {
         enabled = row[Meter.enabled],
         serialPort = row[Meter.serialPort],
         baudRate = row[Meter.baudRate],
+        dataBits = row[Meter.dataBits],
         parity = row[Meter.parity],
         stopBits = row[Meter.stopBits],
         slaveId = row[Meter.slaveId],
+        byteOrder = row[Meter.byteOrder],
         pollIntervalMs = row[Meter.pollIntervalMs],
     )
 
@@ -87,9 +92,11 @@ class MeterRepository {
         enabled: Boolean,
         serialPort: String,
         baudRate: Int,
+        dataBits: Int,
         parity: Parity,
         stopBits: Int,
         slaveId: Int,
+        byteOrder: ByteOrder,
         pollIntervalMs: Int,
     ): MeterRecord = dbQuery {
         val newId = Meter.insert { row ->
@@ -99,9 +106,11 @@ class MeterRepository {
             row[Meter.enabled] = enabled
             row[Meter.serialPort] = serialPort
             row[Meter.baudRate] = baudRate
+            row[Meter.dataBits] = dataBits
             row[Meter.parity] = parity
             row[Meter.stopBits] = stopBits
             row[Meter.slaveId] = slaveId
+            row[Meter.byteOrder] = byteOrder
             row[Meter.pollIntervalMs] = pollIntervalMs
         } get Meter.id
         rowToMeter(Meter.selectAll().where { Meter.id eq newId }.first())
@@ -114,9 +123,11 @@ class MeterRepository {
             row[Meter.enabled] = updated.enabled
             row[Meter.serialPort] = updated.serialPort
             row[Meter.baudRate] = updated.baudRate
+            row[Meter.dataBits] = updated.dataBits
             row[Meter.parity] = updated.parity
             row[Meter.stopBits] = updated.stopBits
             row[Meter.slaveId] = updated.slaveId
+            row[Meter.byteOrder] = updated.byteOrder
             row[Meter.pollIntervalMs] = updated.pollIntervalMs
         } > 0
     }

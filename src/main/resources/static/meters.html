@@ -86,16 +86,24 @@
                         <input type="text" name="name" placeholder="np. Miernik glowny" required>
                     </label>
                     <label class="field">
-                        <span>Device code *</span>
-                        <input type="text" name="deviceCode" placeholder="np. MTR-001" required>
-                    </label>
-                    <label class="field">
                         <span>Port szeregowy *</span>
-                        <input type="text" name="serialPort" placeholder="np. /dev/ttyUSB0" required>
+                        <input type="text" name="serialPort" list="serialPortOptions" placeholder="np. COM3 lub /dev/ttyUSB0" required>
+                    </label>
+                    <datalist id="serialPortOptions"></datalist>
+                    <label class="field">
+                        <span>BaudRate *</span>
+                        <input type="number" name="baudRate" min="300" step="300" value="9600" required>
                     </label>
                     <label class="field">
-                        <span>Baud rate *</span>
-                        <input type="number" name="baudRate" min="300" step="300" value="9600" required>
+                        <span>DataBits *</span>
+                        <input type="number" name="dataBits" min="5" max="8" value="8" required>
+                    </label>
+                    <label class="field">
+                        <span>StopBits</span>
+                        <select name="stopBits">
+                            <option value="1" selected>1</option>
+                            <option value="2">2</option>
+                        </select>
                     </label>
                     <label class="field">
                         <span>Parity</span>
@@ -106,15 +114,15 @@
                         </select>
                     </label>
                     <label class="field">
-                        <span>Stop bits</span>
-                        <select name="stopBits">
-                            <option value="1" selected>1</option>
-                            <option value="2">2</option>
-                        </select>
-                    </label>
-                    <label class="field">
                         <span>Slave ID *</span>
                         <input type="number" name="slaveId" min="1" max="247" value="1" required>
+                    </label>
+                    <label class="field">
+                        <span>ByteOrder</span>
+                        <select name="byteOrder">
+                            <option value="BIG_ENDIAN" selected>BigEndian</option>
+                            <option value="LITTLE_ENDIAN">LittleEndian</option>
+                        </select>
                     </label>
                     <label class="field">
                         <span>Poll interval (ms)</span>
