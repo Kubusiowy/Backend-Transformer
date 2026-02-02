@@ -40,4 +40,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
     implementation("org.jetbrains.exposed:exposed-java-time:0.45.0")
     implementation("org.mindrot:jbcrypt:0.4")
+
+    //env
+    implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
 }
