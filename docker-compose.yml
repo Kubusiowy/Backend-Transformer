@@ -39,6 +39,7 @@ services:
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
+    platform: linux/amd64
     container_name: ktor_phpmyadmin
     restart: always
 
