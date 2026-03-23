@@ -16,8 +16,8 @@ RUN ./gradlew dependencies --no-daemon || true
 # 4) Dopiero teraz cały kod projektu
 COPY . .
 
-# 5) Budujemy JAR (standardowo w build/libs/)
-RUN ./gradlew clean build --no-daemon
+# 5) Budujemy JAR do obrazu runtime; testy odpalaj osobno (CI/lokalnie z DB)
+RUN ./gradlew clean build -x test --no-daemon
 
 # 6) ETAP: runtime (tu nie ma Gradle, tylko JRE)
 FROM eclipse-temurin:21-jre

@@ -1,0 +1,17 @@
+.git
+.gitignore
+.gradle
+.gradle-user-home
+.kotlin
+build
+out
+.idea
+.vscode
+*.iml
+
+# local env/secrets should not be baked into image layers
+.env
+
+# local artifacts
+*.log
+*.tmp
