@@ -12,6 +12,7 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
+import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -36,6 +37,7 @@ class AuthRepository {
                 it[Users.email] = user.email
                 it[Users.passwordHash] = user.passwordHash
                 it[Users.role] = user.role
+                it[Users.createdAt] = Instant.now()
             }
             user.id
         }

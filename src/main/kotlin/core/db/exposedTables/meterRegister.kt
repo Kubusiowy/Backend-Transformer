@@ -2,6 +2,7 @@ package com.example.core.db.exposedTables
 
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.javatime.CurrentTimestamp
 import org.jetbrains.exposed.sql.javatime.timestamp
 
 @Serializable
@@ -29,7 +30,7 @@ object MeterRegister : Table("meter_register") {
     val unit = varchar("unit", 16).nullable()
     val enabled = bool("enabled").default(true)
     val orderIndex = integer("order_index").default(0)
-    val createdAt = timestamp("created_at")
+    val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
 
     override val primaryKey = PrimaryKey(id)
 }

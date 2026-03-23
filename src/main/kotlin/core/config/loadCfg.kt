@@ -1,5 +1,7 @@
 package com.example.core.config
 
+private fun envOrNull(name: String): String? = System.getenv(name) ?: dotenv.get(name)
+
 fun loadConfigJWT():JwtConfig {
     val audience = getEnv("JWT_AUDIENCE")
     val issuer = getEnv("JWT_ISSUER")
@@ -14,15 +16,26 @@ fun loadConfigJWT():JwtConfig {
     )
 }
 
+fun loadDatabaseConfig(): DBParameters {
+    val hasDbConfig = envOrNull("DB_HOST") != null || envOrNull("DB_NAME") != null
+    if (hasDbConfig) return loadConfigAppDB()
+
+    val hasMampConfig = envOrNull("MAMP_DB_HOST") != null || envOrNull("MAMP_DB_NAME") != null
+    if (hasMampConfig) return loadConfigMampDB()
+
+    return loadConfigDockerDB()
+}
+
 fun loadConfigDockerDB(): DBParameters{
     val database = getEnv("MYSQL_DATABASE")
     val user = getEnv("MYSQL_USER")
     val password = getEnv("MYSQL_PASSWORD")
+    val host = envOrNull("MYSQL_HOST") ?: "db"
     return DBParameters(
         databaseName = database,
         user = user,
         password = password,
-        dbHost = "db",
+        dbHost = host,
         dbPort = getIntEnv("MYSQL_PORT")
     )
 

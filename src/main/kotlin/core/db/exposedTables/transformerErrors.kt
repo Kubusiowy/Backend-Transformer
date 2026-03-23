@@ -2,6 +2,7 @@ package com.example.core.db.exposedTables
 
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.javatime.CurrentTimestamp
 import org.jetbrains.exposed.sql.javatime.timestamp
 
 @Serializable
@@ -18,7 +19,7 @@ object TransformerErrors : Table("transformer_errors") {
     val message = varchar("message", 255)
     val status = enumerationByName("status", 16, TransformerErrorStatus::class)
         .default(TransformerErrorStatus.ERROR)
-    val createdAt = timestamp("created_at")
+    val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
 
     override val primaryKey = PrimaryKey(id)
 }

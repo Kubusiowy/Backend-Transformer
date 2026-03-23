@@ -46,6 +46,26 @@ If the server starts successfully, you'll see the following output:
 2024-12-04 14:32:45.682 [main] INFO  Application - Responding at http://0.0.0.0:8080
 ```
 
+## Environment and database
+
+Project is wired to the values from `.env`:
+
+- Docker backend port: `APP_PORT`
+- Docker MySQL port: `MYSQL_PORT`
+- Docker phpMyAdmin port: `PHPMYADMIN_PORT`
+- JWT config: `JWT_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_REALM`
+- Local backend database fallback: `MAMP_DB_*`
+
+Database config resolution order in backend:
+
+1. `DB_*` variables, used by `docker-compose` for the backend container
+2. `MAMP_DB_*` variables, used for local backend start
+3. `MYSQL_*` variables, as a fallback
+
+Docker MySQL imports SQL files from the [`database`](./database) directory through `/docker-entrypoint-initdb.d`.
+This runs only when the `db_data` volume is created for the first time. If you need to re-run the seed, remove the volume and start the stack again.
+Independent of that first-run seed, the `db` service also reapplies the application database, MySQL user and grants from `.env` on every startup. This keeps backend credentials valid even when `db_data` already existed from an older run.
+
 ## Transformer errors API (for client implementers)
 
 Backend exposes a dedicated list of transformer errors that the frontend can read and display.

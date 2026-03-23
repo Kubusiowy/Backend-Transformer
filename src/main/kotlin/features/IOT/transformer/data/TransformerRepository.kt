@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
+import java.time.Instant
 import java.util.UUID
 
 class TransformerRepository {
@@ -40,11 +41,13 @@ class TransformerRepository {
 
     suspend fun create(userId: UUID, name: String, location: String?): TransformerRecord = dbQuery {
         val id = UUID.randomUUID()
+        val now = Instant.now()
         Transformers.insert { row ->
             row[Transformers.id] = id.toString()
             row[Transformers.userId] = userId.toString()
             row[Transformers.name] = name
             row[Transformers.location] = location
+            row[Transformers.createdAt] = now
         }
         TransformerRecord(id, userId, name, location)
     }

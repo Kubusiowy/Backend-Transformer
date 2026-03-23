@@ -14,5 +14,9 @@ object Metrics1mKv: Table("metrics_1m_kv"){
     val unit = varchar("unit",16).nullable()
     val label = varchar("label", 64).nullable()
 
+    init {
+        index("idx_1m_range", false, transformerId, bucketTs)
+    }
+
     override val primaryKey = PrimaryKey(transformerId, key, bucketTs)
 }

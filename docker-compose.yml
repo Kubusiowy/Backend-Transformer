@@ -3,6 +3,20 @@ services:
     image: mysql:8.0
     container_name: ktor_db
     restart: always
+    entrypoint:
+      - sh
+      - -c
+      - >
+        docker-entrypoint.sh mysqld &
+        pid="$$!";
+        until mysqladmin ping -uroot -p"$${MYSQL_ROOT_PASSWORD}" --silent; do sleep 2; done;
+        mysql -uroot -p"$${MYSQL_ROOT_PASSWORD}" -e "CREATE DATABASE IF NOT EXISTS \`$${MYSQL_DATABASE}\`;
+        CREATE USER IF NOT EXISTS '$${MYSQL_USER}'@'%' IDENTIFIED BY '$${MYSQL_PASSWORD}';
+        ALTER USER '$${MYSQL_USER}'@'%' IDENTIFIED BY '$${MYSQL_PASSWORD}';
+        GRANT ALL PRIVILEGES ON \`$${MYSQL_DATABASE}\`.* TO '$${MYSQL_USER}'@'%';
+        FLUSH PRIVILEGES;";
+        touch /tmp/db-ready;
+        wait "$$pid"
 
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -15,13 +29,13 @@ services:
 
     volumes:
       - db_data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d:ro
 
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD-SHELL", "test -f /tmp/db-ready && mysqladmin ping -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
       interval: 5s
       timeout: 5s
       retries: 20
-
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin

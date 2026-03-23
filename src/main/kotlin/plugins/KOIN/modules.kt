@@ -1,7 +1,7 @@
 package com.example.plugins.KOIN
 
 import com.example.core.config.DBParameters
-import com.example.core.config.loadConfigAppDB
+import com.example.core.config.loadDatabaseConfig
 import com.example.core.config.loadConfigJWT
 import com.example.core.util.passHash.Hasher
 import com.example.core.util.passHash.HasherIMPL
@@ -19,7 +19,7 @@ import org.koin.dsl.module
 
 val LoadCfg = module {
     single {loadConfigJWT()}
-    single<DBParameters>{loadConfigAppDB()}
+    single<DBParameters>{ loadDatabaseConfig() }
 }
 
 val JwtModule = module {

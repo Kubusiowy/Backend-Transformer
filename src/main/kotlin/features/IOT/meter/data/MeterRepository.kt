@@ -13,6 +13,7 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
+import java.time.Instant
 import java.util.UUID
 
 class MeterRepository {
@@ -99,6 +100,7 @@ class MeterRepository {
         byteOrder: ByteOrder,
         pollIntervalMs: Int,
     ): MeterRecord = dbQuery {
+        val now = Instant.now()
         val newId = Meter.insert { row ->
             row[Meter.transformerId] = transformerId.toString()
             row[Meter.name] = name
@@ -112,12 +114,15 @@ class MeterRepository {
             row[Meter.slaveId] = slaveId
             row[Meter.byteOrder] = byteOrder
             row[Meter.pollIntervalMs] = pollIntervalMs
+            row[Meter.createdAt] = now
+            row[Meter.updatedAt] = now
         } get Meter.id
         rowToMeter(Meter.selectAll().where { Meter.id eq newId }.first())
     }
 
     suspend fun update(id: Long, updated: MeterRecord): Boolean = dbQuery {
         Meter.update({ Meter.id eq id }) { row ->
+            row[Meter.updatedAt] = Instant.now()
             row[Meter.name] = updated.name
             row[Meter.deviceCode] = updated.deviceCode
             row[Meter.enabled] = updated.enabled
@@ -156,6 +161,7 @@ class MeterRepository {
         enabled: Boolean,
         orderIndex: Int,
     ): RegisterRecord = dbQuery {
+        val now = Instant.now()
         val newId = MeterRegister.insert { row ->
             row[MeterRegister.meterId] = meterId
             row[MeterRegister.name] = name
@@ -167,6 +173,7 @@ class MeterRepository {
             row[MeterRegister.unit] = unit
             row[MeterRegister.enabled] = enabled
             row[MeterRegister.orderIndex] = orderIndex
+            row[MeterRegister.createdAt] = now
         } get MeterRegister.id
         rowToRegister(MeterRegister.selectAll().where { MeterRegister.id eq newId }.first())
     }

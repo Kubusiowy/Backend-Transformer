@@ -37,6 +37,13 @@ object DatabaseFactory: KoinComponent {
             validate()
         }
 
+        println("JDBC URL = ${loadCfg.dbHost}")
+        println("Database = ${loadCfg.databaseName}")
+        println("DB USER = ${loadCfg.user}")
+        println("DB PASSWORD = ${loadCfg.password}")
+
+
+
         dataSource = HikariDataSource(config)
         Database.connect(dataSource)
         transaction {

@@ -14,6 +14,6 @@ fun getEnv(name:String):String{
 }
 
 fun getIntEnv(name:String):Int{
-    val env = dotenv.get(name)
+    val env = System.getenv(name) ?: dotenv.get(name)
     return env.toIntOrNull() ?: error("Environment variable $name must be an integer, but was: $env")
 }
