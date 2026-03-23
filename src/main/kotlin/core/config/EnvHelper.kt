@@ -5,11 +5,12 @@ import io.github.cdimascio.dotenv.dotenv
 
 val dotenv = dotenv {
     directory = "./"
-    ignoreIfMissing = false
+    // In containers values come from process env; .env file may not exist.
+    ignoreIfMissing = true
 }
 
 fun getEnv(name:String):String{
-    return dotenv.get(name)?: error("Environment variable $name is missing")
+    return System.getenv(name) ?: dotenv.get(name) ?: error("Environment variable $name is missing")
 }
 
 fun getIntEnv(name:String):Int{
