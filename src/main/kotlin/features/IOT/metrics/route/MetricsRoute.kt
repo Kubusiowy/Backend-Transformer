@@ -44,6 +44,7 @@ fun Route.metricsRoute() {
         transformerId = transformerId.toString(),
         key = key,
         bucketTs = bucketTs.toString(),
+        lastValue = lastValue,
         avgValue = avgValue,
         minValue = minValue,
         maxValue = maxValue,

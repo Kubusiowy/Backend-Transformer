@@ -23,6 +23,7 @@ class MetricsRepository {
         val transformerId: UUID,
         val key: String,
         val bucketTs: LocalDateTime,
+        val lastValue: Double?,
         val avgValue: Double?,
         val minValue: Double?,
         val maxValue: Double?,
@@ -35,6 +36,7 @@ class MetricsRepository {
         transformerId = UUID.fromString(row[Metrics1mKv.transformerId]),
         key = row[Metrics1mKv.key],
         bucketTs = row[Metrics1mKv.bucketTs],
+        lastValue = row[Metrics1mKv.lastValue],
         avgValue = row[Metrics1mKv.avgValue],
         minValue = row[Metrics1mKv.minValue],
         maxValue = row[Metrics1mKv.maxValue],
@@ -98,6 +100,7 @@ class MetricsRepository {
                 row[Metrics1mKv.transformerId] = transformerId.toString()
                 row[Metrics1mKv.key] = key
                 row[Metrics1mKv.bucketTs] = bucketTs
+                row[Metrics1mKv.lastValue] = value
                 row[Metrics1mKv.avgValue] = value
                 row[Metrics1mKv.minValue] = value
                 row[Metrics1mKv.maxValue] = value
@@ -117,6 +120,7 @@ class MetricsRepository {
                     (Metrics1mKv.key eq key) and
                     (Metrics1mKv.bucketTs eq bucketTs)
             }) { row ->
+                row[lastValue] = value
                 row[avgValue] = nextAvg
                 row[minValue] = nextMin
                 row[maxValue] = nextMax

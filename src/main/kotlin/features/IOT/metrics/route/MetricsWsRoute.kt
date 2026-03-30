@@ -111,6 +111,7 @@ fun Route.metricsWsRoute() {
                     transformerId = record.transformerId.toString(),
                     key = record.key,
                     bucketTs = record.bucketTs.toString(),
+                    lastValue = record.lastValue,
                     avgValue = record.avgValue,
                     minValue = record.minValue,
                     maxValue = record.maxValue,

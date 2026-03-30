@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Biezace dane pomiarowe w panelu Backend Transformer.">
-    <meta name="keywords" content="dane, odczyty, transformatory, mierniki">
+    <meta name="description" content="Wykresy pomiarowe w panelu Backend Transformer.">
+    <meta name="keywords" content="wykresy, odczyty, transformatory, mierniki">
     <meta name="author" content="Backend Transformer">
     <meta name="application-name" content="Backend Transformer">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#1d4ed8">
     <meta name="color-scheme" content="light dark">
-    <title>Dane - Backend Transformer</title>
+    <title>Wykresy - Backend Transformer</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="theme-light" data-page="readings-data">
+<body class="theme-light" data-page="readings-charts">
     <header class="topbar">
         <div class="topbar__brand">Backend Transformer</div>
         <nav class="topbar__nav">
@@ -56,8 +56,8 @@
             <section class="card monitor-section monitor-section--hero readings-shell">
                 <div class="card__header">
                     <span class="card__eyebrow">Monitoring</span>
-                    <h2>Dane pomiarowe</h2>
-                    <p>Czysty widok aktualnych wartosci dla transformatora, miernika i jego rejestrow.</p>
+                    <h2>Wykresy rejestrow</h2>
+                    <p>Osobne, spokojne wykresy dla wybranych rejestrow bez laczenia wszystkiego na jednym canvasie.</p>
                 </div>
                 <div class="form form--two">
                     <label class="field">
@@ -73,7 +73,7 @@
                         <input type="number" id="readingsLimit" min="10" max="5000" value="120">
                     </label>
                     <div class="form__actions field--full">
-                        <button class="btn" id="readingsLoad" type="button">Odswiez dane</button>
+                        <button class="btn" id="readingsLoad" type="button">Odswiez wykresy</button>
                         <button class="btn btn--ghost" id="readingsRefresh" type="button">Odswiez listy</button>
                     </div>
                 </div>
@@ -94,11 +94,21 @@
             <section class="card monitor-section monitor-section--registers">
                 <div class="card__header">
                     <span class="card__eyebrow">Rejestry</span>
-                    <h2>Lista rejestrow i odczytow</h2>
-                    <p>Wszystkie dodane rejestry sa odczytywane automatycznie i pokazywane bez osobnej sekcji pomocniczej.</p>
+                    <h2>Rejestry na wykresach</h2>
+                    <p>Wszystkie dodane rejestry sa ladowane automatycznie. Ten widok skupia sie tylko na historii pomiarow.</p>
                 </div>
                 <div id="registerCardGrid" class="register-card-grid"></div>
                 <div id="registerPickerEmpty" class="empty">Wybierz miernik, aby zobaczyc rejestry.</div>
+            </section>
+
+            <section class="card monitor-section monitor-section--charts">
+                <div class="card__header">
+                    <span class="card__eyebrow">Wykresy</span>
+                    <h2>Historie pomiarow</h2>
+                    <p>Jedna karta, jeden rejestr, jeden wykres. Prosto i czytelnie.</p>
+                </div>
+                <div id="registerMetricsGrid" class="metrics-grid"></div>
+                <div id="registerMetricsEmpty" class="empty">Zaznacz rejestry, aby zobaczyc wykresy.</div>
             </section>
         </section>
     </main>

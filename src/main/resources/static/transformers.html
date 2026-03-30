@@ -29,7 +29,16 @@
                         <a class="topbar__tab topbar__tab--sub" data-page-link="registers" href="/static/registers.html">Rejestry</a>
                     </div>
                 </div>
-                <a class="topbar__tab" data-page-link="readings" href="/static/readings.html">Odczyty</a>
+                <div class="topbar__group">
+                    <button class="topbar__tab topbar__tab--group" type="button" aria-haspopup="true">
+                        Monitoring
+                    </button>
+                    <div class="topbar__menu">
+                        <a class="topbar__tab topbar__tab--sub" data-page-link="readings-data" href="/static/readings.html">Dane</a>
+                        <a class="topbar__tab topbar__tab--sub" data-page-link="readings-charts" href="/static/readings-charts.html">Wykresy</a>
+                        <a class="topbar__tab topbar__tab--sub" data-page-link="readings-diagnostics" href="/static/readings-diagnostics.html">Diagnostyka</a>
+                    </div>
+                </div>
                 <a class="topbar__tab" data-page-link="profile" href="/static/profile.html">Profil</a>
                 <a class="topbar__tab" data-page-link="admin" data-admin-link href="/static/admin.html">Admin</a>
             </div>

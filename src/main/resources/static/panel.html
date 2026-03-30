@@ -35,7 +35,16 @@
                         <a class="topbar__tab topbar__tab--sub" data-page-link="registers" href="/static/registers.html">Rejestry</a>
                     </div>
                 </div>
-                <a class="topbar__tab" data-page-link="readings" href="/static/readings.html">Odczyty</a>
+                <div class="topbar__group">
+                    <button class="topbar__tab topbar__tab--group" type="button" aria-haspopup="true">
+                        Monitoring
+                    </button>
+                    <div class="topbar__menu">
+                        <a class="topbar__tab topbar__tab--sub" data-page-link="readings-data" href="/static/readings.html">Dane</a>
+                        <a class="topbar__tab topbar__tab--sub" data-page-link="readings-charts" href="/static/readings-charts.html">Wykresy</a>
+                        <a class="topbar__tab topbar__tab--sub" data-page-link="readings-diagnostics" href="/static/readings-diagnostics.html">Diagnostyka</a>
+                    </div>
+                </div>
                 <a class="topbar__tab" data-page-link="profile" href="/static/profile.html">Profil</a>
                 <a class="topbar__tab" data-page-link="admin" data-admin-link href="/static/admin.html">Admin</a>
             </div>
@@ -54,15 +63,15 @@
                 <div class="card__header">
                     <span class="card__eyebrow">Proste kroki</span>
                     <h2>Jak korzystac z panelu</h2>
-                    <p>Panel jest podzielony na osobne podstrony. Zacznij od dodania transformatora, a nastepnie uzupelnij mierniki i rejestry.</p>
+                    <p>Panel jest podzielony na czytelne sekcje. Zacznij od konfiguracji, a potem przejdz do monitoringu danych, wykresow i diagnostyki.</p>
                 </div>
                 <ol class="steps">
                     <li>Wejdz w "Transformatory" i dodaj nowy wpis.</li>
                     <li>W "Mierniki" skonfiguruj mierniki.</li>
                     <li>W "Rejestry" dodaj rejestry dla miernika.</li>
-                    <li>W "Odczyty" sprawdz dane.</li>
+                    <li>W "Monitoring" sprawdz dane, wykresy i diagnostyke.</li>
                 </ol>
-                <div class="note">Panel jest podlaczony do endpointow API. Dodane dane zapisuja sie w bazie.</div>
+                <p class="card__info">Panel pracuje na danych pobieranych z API i zapisanych w bazie.</p>
             </section>
 
             <section class="card">
@@ -89,7 +98,7 @@
                         <div class="meta__value" id="statLastRead">Brak</div>
                     </div>
                 </div>
-                <div class="note" id="roleNote">Rola uzytkownika determinuje dostep do funkcji administracyjnych.</div>
+                <p class="card__info" id="roleNote">Rola uzytkownika determinuje dostep do funkcji administracyjnych.</p>
             </section>
         </section>
     </main>

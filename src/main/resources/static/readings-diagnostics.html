@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Biezace dane pomiarowe w panelu Backend Transformer.">
-    <meta name="keywords" content="dane, odczyty, transformatory, mierniki">
+    <meta name="description" content="Diagnostyka i logi na zywo w panelu Backend Transformer.">
+    <meta name="keywords" content="diagnostyka, bledy, websocket, transformatory">
     <meta name="author" content="Backend Transformer">
     <meta name="application-name" content="Backend Transformer">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#1d4ed8">
     <meta name="color-scheme" content="light dark">
-    <title>Dane - Backend Transformer</title>
+    <title>Diagnostyka - Backend Transformer</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="theme-light" data-page="readings-data">
+<body class="theme-light" data-page="readings-diagnostics">
     <header class="topbar">
         <div class="topbar__brand">Backend Transformer</div>
         <nav class="topbar__nav">
@@ -56,8 +56,8 @@
             <section class="card monitor-section monitor-section--hero readings-shell">
                 <div class="card__header">
                     <span class="card__eyebrow">Monitoring</span>
-                    <h2>Dane pomiarowe</h2>
-                    <p>Czysty widok aktualnych wartosci dla transformatora, miernika i jego rejestrow.</p>
+                    <h2>Diagnostyka i logi</h2>
+                    <p>Jeden ekran do kontroli stanu transformatora i przychodzacych komunikatow live.</p>
                 </div>
                 <div class="form form--two">
                     <label class="field">
@@ -91,14 +91,28 @@
                 <div class="readings-overview" id="readingsOverview"></div>
             </section>
 
-            <section class="card monitor-section monitor-section--registers">
+            <section class="card monitor-section monitor-section--diagnostics">
                 <div class="card__header">
-                    <span class="card__eyebrow">Rejestry</span>
-                    <h2>Lista rejestrow i odczytow</h2>
-                    <p>Wszystkie dodane rejestry sa odczytywane automatycznie i pokazywane bez osobnej sekcji pomocniczej.</p>
+                    <span class="card__eyebrow">Diagnostyka</span>
+                    <h2>Bledy transformatora</h2>
+                    <p>Aktualne ostrzezenia i bledy z backendu dla wybranego transformatora.</p>
                 </div>
-                <div id="registerCardGrid" class="register-card-grid"></div>
-                <div id="registerPickerEmpty" class="empty">Wybierz miernik, aby zobaczyc rejestry.</div>
+                <div class="form__actions">
+                    <button class="btn btn--ghost" id="transformerErrorsRefresh" type="button">Odswiez bledy</button>
+                </div>
+                <div class="note" id="transformerErrorsHint">Wybierz transformator, aby zobaczyc bledy.</div>
+                <div id="transformerErrorsList" class="list"></div>
+                <div id="transformerErrorsEmpty" class="empty">Brak bledow.</div>
+            </section>
+
+            <section class="card monitor-section monitor-section--live">
+                <div class="card__header">
+                    <span class="card__eyebrow">Live</span>
+                    <h2>Ostatnie wiadomosci WebSocket</h2>
+                    <p>Na zywo: ostatnie komunikaty z odczytow i ich stan polaczenia.</p>
+                </div>
+                <div class="log" id="wsLog"></div>
+                <div id="wsLogEmpty" class="empty">Brak danych WebSocket.</div>
             </section>
         </section>
     </main>

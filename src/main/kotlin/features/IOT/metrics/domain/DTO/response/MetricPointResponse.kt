@@ -7,6 +7,7 @@ data class MetricPointResponse(
     val transformerId: String,
     val key: String,
     val bucketTs: String,
+    val lastValue: Double?,
     val avgValue: Double?,
     val minValue: Double?,
     val maxValue: Double?,

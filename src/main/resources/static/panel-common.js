@@ -58,8 +58,11 @@ const updateNavState = () => {
     });
 
     const configPages = new Set(["transformers", "meters", "registers"]);
+    const monitoringPages = new Set(["readings-data", "readings-charts", "readings-diagnostics"]);
     document.querySelectorAll(".topbar__tab--group").forEach((btn) => {
-        const active = configPages.has(page);
+        const label = btn.textContent.trim().toLowerCase();
+        const active = (label === "konfiguracja" && configPages.has(page))
+            || (label === "monitoring" && monitoringPages.has(page));
         btn.classList.toggle("is-active", active);
         btn.setAttribute("aria-expanded", active ? "true" : "false");
     });

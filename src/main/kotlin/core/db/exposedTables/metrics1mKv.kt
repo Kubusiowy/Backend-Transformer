@@ -7,6 +7,7 @@ object Metrics1mKv: Table("metrics_1m_kv"){
     val transformerId = char("transformer_id",36) //pk 1
     val key = varchar("key",64) //pk 2
     val bucketTs = datetime("bucket_ts") // pk 3
+    val lastValue = double("last_value").nullable()
     val avgValue = double("avg_value").nullable()
     val minValue = double("min_value").nullable()
     val maxValue = double("max_value").nullable()

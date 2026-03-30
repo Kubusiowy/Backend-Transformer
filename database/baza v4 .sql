@@ -90,6 +90,7 @@ CREATE TABLE `metrics_1m_kv` (
   `transformer_id` char(36) NOT NULL,
   `key` varchar(64) NOT NULL,
   `bucket_ts` datetime NOT NULL,
+  `last_value` double DEFAULT NULL,
   `avg_value` double DEFAULT NULL,
   `min_value` double DEFAULT NULL,
   `max_value` double DEFAULT NULL,
