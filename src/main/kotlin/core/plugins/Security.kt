@@ -9,9 +9,4 @@ import io.ktor.server.auth.jwt.*
 fun Application.configureSecurity() {
 
 
-    authentication {
-        jwt("auth-jwt") {
-
-        }
-    }
 }

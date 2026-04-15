@@ -16,4 +16,4 @@ database:
   port: ${DB_PORT}
   name: ${DB_NAME}
   user: ${DB_USER}
-  pass: ${DB_PASSWORD}
+  pass: ${DB_PASS}

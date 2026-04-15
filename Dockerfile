@@ -4,8 +4,8 @@ WORKDIR /app
 
 COPY . .
 
-RUN chmod -x gradlew
-RUN ./gradlew buildFatJar -x test --noe-daemon
+RUN chmod +x gradlew
+RUN ./gradlew buildFatJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre
 
