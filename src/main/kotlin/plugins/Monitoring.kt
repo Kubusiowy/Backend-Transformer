@@ -9,5 +9,6 @@ fun Application.configureMonitoring() {
     install(CallLogging) {
         level = Level.INFO
         filter { call -> call.request.path().startsWith("/") }
+        format { call -> "${call.request.httpMethod.value} ${call.request.path()} ${call.response.status()?.value ?: 0}" }
     }
 }

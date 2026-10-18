@@ -41,6 +41,11 @@ let registerKeyAliases = new Map();
 let wsLogEntries = [];
 let ws = null;
 let autoLoadTimer = null;
+let wsGeneration = 0;
+let wsRetryTimer = null;
+let wsAttempts = 0;
+let pageLeaving = false;
+let metricLoadGeneration = 0;
 
 let selectedTransformerId = window.BTData ? window.BTData.getSelectedId() : null;
 let selectedMeterInfo = window.BTData ? window.BTData.getSelectedMeterInfo() : null;
@@ -126,7 +131,9 @@ const formatValue = (value, unit) => {
         return "(brak)";
     }
     const numberValue = Number(value);
-    const formatted = Number.isFinite(numberValue) ? numberValue.toFixed(2) : String(value);
+    const formatted = Number.isFinite(numberValue)
+        ? numberValue.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+        : String(value);
     return unit ? `${formatted} ${unit}` : formatted;
 };
 
@@ -174,19 +181,6 @@ const formatShortTimestamp = (value) => {
         minute: "2-digit",
         second: "2-digit"
     });
-};
-
-const formatChartAxisValue = (value) => {
-    if (!Number.isFinite(value)) {
-        return "";
-    }
-    if (Math.abs(value) >= 1000) {
-        return value.toFixed(0);
-    }
-    if (Math.abs(value) >= 100) {
-        return value.toFixed(1);
-    }
-    return value.toFixed(2);
 };
 
 const getErrorStatusLabel = (status) => {
@@ -313,11 +307,12 @@ const resolveMetricKey = (payload) => {
 };
 
 const getPointValue = (point) => {
-    const exactValue = Number(point?.lastValue);
+    const exactValue = point?.lastValue == null ? NaN : Number(point.lastValue);
     if (Number.isFinite(exactValue)) {
         return exactValue;
     }
-    const fallbackValue = Number(point?.avgValue ?? point?.maxValue);
+    const fallback = point?.avgValue ?? point?.maxValue;
+    const fallbackValue = fallback == null ? NaN : Number(fallback);
     return Number.isFinite(fallbackValue) ? fallbackValue : null;
 };
 
@@ -327,7 +322,28 @@ const getMetricSeries = (key) =>
     );
 
 const getLatestMetric = (key) => getMetricSeries(key)[0] || null;
-const getMetricTimestamp = (point) => point?._receivedAt || point?.bucketTs || null;
+const getMetricTimestamp = (point) => point?.timestamp || point?.bucketTs || point?._receivedAt || null;
+
+const normalizeMetricPoint = point => isChartsPage && point.sampleId ? {
+    ...point, minValue: point.lastValue, maxValue: point.lastValue, avgValue: point.lastValue, count: 1
+} : point;
+
+const mergeMetricPoints = (history, incoming) => {
+    const points = new Map();
+    for (const source of [...history, ...incoming]) {
+        const point = normalizeMetricPoint(source);
+        const id = isChartsPage && point.sampleId ? point.sampleId : point.bucketTs;
+        const previous = points.get(id);
+        if (!previous || Number(previous.count) <= Number(point.count)) points.set(id, point);
+    }
+    const sampledBuckets = new Set(isChartsPage
+        ? Array.from(points.values()).filter(point => point.sampleId).map(point => point.bucketTs) : []);
+    return Array.from(points.values())
+        .filter(point => point.sampleId || !sampledBuckets.has(point.bucketTs))
+        .sort((a, b) => Date.parse(getMetricTimestamp(b)) - Date.parse(getMetricTimestamp(a)) ||
+            Number(b.sampleId?.split("#").pop() || 0) - Number(a.sampleId?.split("#").pop() || 0))
+        .slice(0, isChartsPage ? undefined : getMetricLimit());
+};
 const parseMetricTimestamp = (point) => {
     const rawValue = getMetricTimestamp(point);
     if (!rawValue) {
@@ -356,7 +372,7 @@ const pruneMetricsStore = () => {
             delete metricsByKey[key];
             return;
         }
-        metricsByKey[key] = (metricsByKey[key] || []).slice(0, getMetricLimit());
+        if (!isChartsPage) metricsByKey[key] = (metricsByKey[key] || []).slice(0, getMetricLimit());
     });
 };
 
@@ -370,10 +386,6 @@ const scheduleMetricsReload = (delay = 150) => {
     }, delay);
 };
 
-const getCssColor = (name, fallback) => {
-    const value = getComputedStyle(document.body).getPropertyValue(name).trim();
-    return value || fallback;
-};
 
 const createStatRow = (label, value) => {
     const row = document.createElement("div");
@@ -407,26 +419,26 @@ const renderOverview = () => {
             meta: getSelectedMeter()?.name || "Brak miernika"
         },
         {
-            label: "Aktywne rejestry",
+            label: "Aktywne pomiary",
             value: String(selectedRegisterKeys.size),
-            meta: selectedRegisterKeys.size ? "Zaznaczone do podgladu" : "Nic nie wybrano"
+            meta: selectedRegisterKeys.size ? "Zaznaczone do podglądu" : "Nic nie wybrano"
         },
         {
             label: "Ostatni odczyt",
             value: latestPoints.length ? formatShortTimestamp(latestPoints[0].bucketTs) : "Brak",
-            meta: latestPoints.length ? "Ostatnia aktualizacja danych" : "Czekam na probki"
+            meta: latestPoints.length ? "Ostatnia aktualizacja danych" : "Czekam na próbki"
         },
         {
-            label: "Limit historii",
-            value: String(getMetricLimit()),
-            meta: isChartsPage ? "Punktow na wykres" : "Punktow na rejestr"
+            label: isChartsPage ? "Zakres historii" : "Limit historii",
+            value: isChartsPage ? "Od początku" : String(getMetricLimit()),
+            meta: isChartsPage ? "Wszystkie zapisane odczyty" : "Punktów na rejestr"
         }
     ];
 
     cards.forEach((item) => {
         const card = document.createElement("div");
         card.className = "overview-card";
-        card.innerHTML = `
+        card.innerHTML = window.BT_HTML`
             <div class="overview-card__label">${item.label}</div>
             <div class="overview-card__value">${item.value}</div>
             <div class="overview-card__meta">${item.meta}</div>
@@ -441,7 +453,7 @@ const renderTransformerSelect = () => {
     }
     transformerSelect.innerHTML = "";
     if (!transformers.length) {
-        transformerSelect.innerHTML = '<option value="">Brak transformatorow</option>';
+        transformerSelect.innerHTML = '<option value="">Brak transformatorów</option>';
         transformerSelect.disabled = true;
         return;
     }
@@ -449,7 +461,7 @@ const renderTransformerSelect = () => {
     transformers.forEach((transformer) => {
         const option = document.createElement("option");
         option.value = String(transformer.id);
-        option.textContent = `${transformer.name} (${transformer.id})`;
+        option.textContent = transformer.location ? `${transformer.name} · ${transformer.location}` : transformer.name;
         transformerSelect.append(option);
     });
     if (getSelectedTransformerId()) {
@@ -463,7 +475,7 @@ const renderMeterSelect = () => {
     }
     meterSelect.innerHTML = "";
     if (!meters.length) {
-        meterSelect.innerHTML = '<option value="">Brak miernikow</option>';
+        meterSelect.innerHTML = '<option value="">Brak mierników</option>';
         meterSelect.disabled = true;
         return;
     }
@@ -491,8 +503,8 @@ const renderRegisterPicker = () => {
     if (!registers.length) {
         registerPickerEmpty.style.display = "block";
         registerPickerEmpty.textContent = getSelectedMeter()
-            ? "Brak rejestrow dla wybranego miernika."
-            : "Wybierz miernik, aby zobaczyc rejestry.";
+            ? "Brak pomiarów dla wybranego miernika."
+            : "Wybierz miernik, aby zobaczyć pomiary.";
         return;
     }
     registerPickerEmpty.style.display = "none";
@@ -506,199 +518,39 @@ const renderRegisterPicker = () => {
 
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
-        checkbox.checked = true;
+        checkbox.checked = selectedRegisterKeys.has(key);
         checkbox.value = key;
-        checkbox.tabIndex = -1;
-        checkbox.setAttribute("aria-hidden", "true");
+        checkbox.setAttribute("aria-label", register.name || key);
+        checkbox.addEventListener("change", () => {
+            if (checkbox.checked) selectedRegisterKeys.add(key);
+            else selectedRegisterKeys.delete(key);
+            card.dataset.selected = String(checkbox.checked);
+            pruneMetricsStore();
+            scheduleMetricsReload();
+        });
 
         const info = document.createElement("div");
         info.className = "register-card__content";
-        info.innerHTML = `
+        info.innerHTML = window.BT_HTML`
             <div class="register-card__top">
                 <div>
-                    <div class="register-card__name">${register.name || "Rejestr"}</div>
-                    <div class="register-card__meta">${register.registerType || "Typ"} | adres ${register.address ?? "-"}</div>
+                    <div class="register-card__name">${register.name || "Pomiar"}</div>
+                    <div class="register-card__meta">${register.enabled === false ? "Wyłączony" : ""}</div>
                 </div>
             </div>
         `;
 
         const summary = document.createElement("div");
         summary.className = "register-card__summary";
-        summary.innerHTML = `
-            <div class="register-card__summary-label">Aktualnie</div>
-            <div class="register-card__value">${formatRoundedValue(getPointValue(latest), register.unit)}</div>
-            <div class="register-card__summary-exact">${formatExactValue(getPointValue(latest), register.unit)}</div>
+        summary.innerHTML = window.BT_HTML`
+            <div class="register-card__value">${formatValue(getPointValue(latest), register.unit)}</div>
             <div class="register-card__summary-time">${formatShortTimestamp(getMetricTimestamp(latest))}</div>
         `;
 
-        const details = document.createElement("div");
-        details.className = "register-card__details";
-        const detailItems = [
-            ["Jednostka", register.unit || "-"],
-            ["Dane", register.dataType || "-"],
-            ["Skala", register.scale ?? "-"],
-            ["Status", register.enabled === false ? "Wylaczony" : "Aktywny"]
-        ];
-        detailItems.forEach(([label, value]) => {
-            const item = document.createElement("div");
-            item.className = "register-card__detail";
-            item.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
-            details.append(item);
-        });
-
-        card.append(checkbox, info, summary, details);
+        info.append(summary);
+        card.append(checkbox, info);
         registerCardGrid.append(card);
     });
-};
-
-const setupCanvas = (canvas, fallbackHeight) => {
-    if (!canvas?.getContext) {
-        return null;
-    }
-    const ctx = canvas.getContext("2d");
-    const width = canvas.clientWidth || canvas.width;
-    const height = canvas.clientHeight || canvas.height || fallbackHeight;
-    const ratio = window.devicePixelRatio || 1;
-    canvas.width = Math.floor(width * ratio);
-    canvas.height = Math.floor(height * ratio);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(ratio, ratio);
-    ctx.clearRect(0, 0, width, height);
-    return { ctx, width, height };
-};
-
-const buildChartScale = (values) => {
-    if (!values.length) {
-        return null;
-    }
-    let min = Math.min(...values);
-    let max = Math.max(...values);
-    if (min === max) {
-        min -= 1;
-        max += 1;
-    }
-    const range = max - min;
-    return {
-        min: min - range * 0.08,
-        max: max + range * 0.08
-    };
-};
-
-const getChartPoints = (points) =>
-    points
-        .map((point) => {
-            const value = getPointValue(point);
-            return {
-                value,
-                rawTimestamp: getMetricTimestamp(point)
-            };
-        })
-        .filter((point) => Number.isFinite(point.value))
-        .reverse();
-
-const drawMiniChart = (canvas, points, color) => {
-    const canvasState = setupCanvas(canvas, 220);
-    if (!canvasState) {
-        return;
-    }
-    const { ctx, width, height } = canvasState;
-    const chartPoints = getChartPoints(points);
-
-    if (!chartPoints.length) {
-        ctx.fillStyle = getCssColor("--muted", "#94a3b8");
-        ctx.font = "12px 'Source Sans 3', sans-serif";
-        ctx.fillText("Brak danych", 12, 20);
-        return;
-    }
-
-    const domainValues = chartPoints.map((point) => point.value);
-    const scale = buildChartScale(domainValues);
-    const padding = { top: 18, right: 18, bottom: 38, left: 52 };
-    const chartWidth = width - padding.left - padding.right;
-    const chartHeight = height - padding.top - padding.bottom;
-    const borderColor = getCssColor("--border", "#cbd5e1");
-    const textMuted = getCssColor("--muted", "#64748b");
-    const textStrong = getCssColor("--text-strong", "#0f172a");
-    const surfaceAlt = getCssColor("--surface-alt", "#f8fafc");
-
-    ctx.fillStyle = surfaceAlt;
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.strokeStyle = `${borderColor}aa`;
-    ctx.lineWidth = 1;
-    for (let index = 0; index <= 4; index += 1) {
-        const y = padding.top + (chartHeight * index) / 4;
-        ctx.beginPath();
-        ctx.moveTo(padding.left, y);
-        ctx.lineTo(width - padding.right, y);
-        ctx.stroke();
-    }
-
-    ctx.font = "11px 'Source Sans 3', sans-serif";
-    ctx.fillStyle = textMuted;
-    ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
-    for (let index = 0; index <= 4; index += 1) {
-        const value = scale.max - ((scale.max - scale.min) * index) / 4;
-        const y = padding.top + (chartHeight * index) / 4;
-        ctx.fillText(formatChartAxisValue(value), padding.left - 8, y);
-    }
-
-    const tickIndexes = Array.from(new Set([
-        0,
-        Math.floor((chartPoints.length - 1) / 2),
-        chartPoints.length - 1
-    ])).filter((index) => index >= 0);
-
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    tickIndexes.forEach((index) => {
-        const x = padding.left + (chartWidth * index) / Math.max(chartPoints.length - 1, 1);
-        const label = formatShortTimestamp(chartPoints[index]?.rawTimestamp);
-        ctx.beginPath();
-        ctx.moveTo(x, padding.top + chartHeight);
-        ctx.lineTo(x, padding.top + chartHeight + 6);
-        ctx.stroke();
-        ctx.fillText(label, x, padding.top + chartHeight + 8);
-    });
-
-    const toX = (index) => padding.left + (chartWidth * index) / Math.max(chartPoints.length - 1, 1);
-    const toY = (value) =>
-        padding.top + chartHeight - ((value - scale.min) / Math.max(scale.max - scale.min, 1e-9)) * chartHeight;
-
-    ctx.beginPath();
-    chartPoints.forEach((point, index) => {
-        const x = toX(index);
-        const y = toY(point.value);
-        if (index === 0) {
-            ctx.moveTo(x, y);
-        } else {
-            ctx.lineTo(x, y);
-        }
-    });
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-    ctx.stroke();
-
-    const latest = chartPoints[chartPoints.length - 1];
-    const latestX = toX(chartPoints.length - 1);
-    const latestY = toY(latest.value);
-
-    ctx.beginPath();
-    ctx.arc(latestX, latestY, 4.5, 0, Math.PI * 2);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = surfaceAlt;
-    ctx.stroke();
-
-    ctx.fillStyle = textStrong;
-    ctx.font = "600 12px 'Source Sans 3', sans-serif";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    ctx.fillText(formatChartAxisValue(latest.value), padding.left + 4, padding.top + 2);
 };
 
 const renderDataCards = () => {
@@ -723,14 +575,14 @@ const renderDataCards = () => {
 
         const header = document.createElement("div");
         header.className = "metric-card__header";
-        header.innerHTML = `
+        header.innerHTML = window.BT_HTML`
             <div class="metric-card__title">${register.name || key}</div>
-            <div class="metric-card__subtitle">${register.registerType || "Rejestr"} | ${register.unit || "bez jednostki"}</div>
+            <div class="metric-card__subtitle">${register.registerType || "Pomiar"} | ${register.unit || "bez jednostki"}</div>
         `;
 
         const hero = document.createElement("div");
         hero.className = "metric-card__hero";
-        hero.innerHTML = `
+        hero.innerHTML = window.BT_HTML`
             <div class="metric-card__hero-label">Aktualna wartosc</div>
             <div class="metric-card__hero-value">${formatRoundedValue(getPointValue(latest), register.unit)}</div>
             <div class="metric-card__hero-exact">Dokladnie: ${formatExactValue(getPointValue(latest), register.unit)}</div>
@@ -768,44 +620,66 @@ const renderChartCards = () => {
 
         const header = document.createElement("div");
         header.className = "metric-card__header";
-        header.innerHTML = `
+        header.innerHTML = window.BT_HTML`
             <div class="metric-card__title">${register.name || key}</div>
-            <div class="metric-card__subtitle">${register.registerType || "Rejestr"} | adres ${register.address ?? "-"}</div>
+            <div class="metric-card__subtitle">${register.registerType || "Pomiar"} | adres ${register.address ?? "-"}</div>
         `;
 
+        const chartPoints = window.BTCharts.prepare(points);
+        const values = chartPoints.flatMap(point => [point.min, point.max]);
+        const hero = document.createElement("div");
+        hero.className = "metric-card__hero";
+        hero.innerHTML = window.BT_HTML`
+            <div class="metric-card__hero-label">Ostatnia wartość</div>
+            <div class="metric-card__hero-value">${formatValue(getPointValue(latest), register.unit)}</div>
+        `;
         const stats = document.createElement("div");
         stats.className = "metric-card__stats";
         [
-            ["Aktualnie", formatRoundedValue(getPointValue(latest), register.unit)],
-            ["Dokladnie", formatExactValue(getPointValue(latest), register.unit)],
-            ["Ostatni odczyt", formatShortTimestamp(getMetricTimestamp(latest))],
-            [
-                "Zakres czasu",
-                points.length
-                    ? `${formatShortTimestamp(getMetricTimestamp(points[points.length - 1]))} - ${formatShortTimestamp(getMetricTimestamp(points[0]))}`
-                    : "(brak)"
-            ]
+            ["Minimum", values.length ? formatValue(values.reduce((min, value) => Math.min(min, value), Infinity), register.unit) : "(brak)"],
+            ["Maksimum", values.length ? formatValue(values.reduce((max, value) => Math.max(max, value), -Infinity), register.unit) : "(brak)"],
+            ["Ostatni pomiar", formatShortTimestamp(getMetricTimestamp(latest))]
         ].forEach(([label, value]) => stats.append(createStatRow(label, value)));
 
         const chartWrap = document.createElement("div");
         chartWrap.className = "metric-card__chart";
         const chartMeta = document.createElement("div");
         chartMeta.className = "metric-card__chart-meta";
-        chartMeta.innerHTML = `
-            <span>Prawidlowa wartosc z pomiaru</span>
-            <span>Czas rzeczywistych probek</span>
-        `;
+        const duration = chartPoints.length ? chartPoints[chartPoints.length - 1].time - chartPoints[0].time : 0;
+        const seconds = Math.floor(duration / 1000);
+        const elapsed = seconds >= 3600 ? `${Math.floor(seconds / 3600)} godz. ${Math.floor(seconds % 3600 / 60)} min`
+            : seconds >= 60 ? `${Math.floor(seconds / 60)} min ${seconds % 60} s` : `${seconds} s`;
+        chartMeta.textContent = chartPoints.length
+            ? `${formatTimestamp(chartPoints[0].time)} – ${formatTimestamp(chartPoints[chartPoints.length - 1].time)} · Czas: ${elapsed} · Pomiary: ${chartPoints.length}`
+            : "Brak pomiarów";
         const canvas = document.createElement("canvas");
+        canvas.dataset.metricKey = key;
+        canvas.dataset.unit = register.unit || "";
+        canvas.dataset.name = register.name || key;
+        canvas.dataset.color = colorPalette[index % colorPalette.length];
+        const readout = document.createElement("div");
+        readout.className = "metric-card__chart-readout";
+        readout.id = `chart-readout-${index}`;
+        readout.setAttribute("aria-live", "polite");
+        canvas.setAttribute("aria-describedby", readout.id);
         const legend = document.createElement("div");
         legend.className = "metric-card__chart-legend";
-        legend.innerHTML = `
-            <span class="metric-card__legend-item"><i style="--legend-color:${colorPalette[index % colorPalette.length]}"></i>Prawidlowa wartosc</span>
+        legend.innerHTML = window.BT_HTML`
+            <span class="metric-card__legend-item"><i style="--legend-color:${canvas.dataset.color}"></i>Wartość pomiaru</span>
+            <span>Oś pozioma: czas · Oś pionowa: ${register.unit || "wartość"}</span>
         `;
-        chartWrap.append(chartMeta, canvas, legend);
-        drawMiniChart(canvas, points, colorPalette[index % colorPalette.length]);
-
-        card.append(header, stats, chartWrap);
+        const hint = document.createElement("p");
+        hint.className = "metric-card__chart-hint";
+        hint.textContent = !chartPoints.length ? "Brak historii dla tego pomiaru."
+            : chartPoints.length === 1
+            ? "Dostępny jest jeden punkt. Linia pojawi się po odebraniu kolejnego pomiaru."
+            : "Wskaż punkt lub użyj strzałek, aby sprawdzić odczyt.";
+        if (points.some(point => !point.sampleId)) hint.textContent += " Starsze dane: ostatnia wartość w minucie, cieniowanie min–maks.";
+        chartWrap.append(chartMeta, canvas, readout, legend, hint);
+        canvas.setAttribute("role", "img");
+        card.append(header, hero, stats, chartWrap);
         metricsGrid.append(card);
+        window.BTCharts.render(canvas, points, canvas.dataset);
     });
 };
 
@@ -817,13 +691,13 @@ const renderTransformerErrors = () => {
     if (!getSelectedTransformer()) {
         errorsEmpty.style.display = "block";
         errorsList.style.display = "none";
-        errorsEmpty.textContent = "Wybierz transformator, aby zobaczyc diagnostyke.";
+        errorsEmpty.textContent = "Wybierz transformator, aby zobaczyć diagnostykę.";
         return;
     }
     if (!transformerErrors.length) {
         errorsEmpty.style.display = "block";
         errorsList.style.display = "none";
-        errorsEmpty.textContent = "Brak bledow.";
+        errorsEmpty.textContent = "Brak błędów.";
         return;
     }
     errorsEmpty.style.display = "none";
@@ -832,7 +706,7 @@ const renderTransformerErrors = () => {
     transformerErrors.forEach((error) => {
         const item = document.createElement("div");
         item.className = "list__item";
-        item.innerHTML = `
+        item.innerHTML = window.BT_HTML`
             <div class="list__main">
                 <div class="list__name">${error.code}: ${error.message}</div>
                 <div class="list__meta">Zgloszono: ${formatTimestamp(error.createdAt)}</div>
@@ -867,8 +741,8 @@ const addWsLogEntry = (payload, raw) => {
     const time = new Date().toLocaleTimeString("pl-PL");
     const text = payload?.key
         ? `${payload.key} | ${formatRoundedValue(getPointValue(payload), payload.unit)}`
-        : String(raw || "Nieznane dane WebSocket.");
-    item.innerHTML = `<div class="log__time">${time}</div><div>${text}</div>`;
+        : String(raw || "Nieznany komunikat.");
+    item.innerHTML = window.BT_HTML`<div class="log__time">${time}</div><div>${text}</div>`;
     wsLog.prepend(item);
     wsLogEntries.unshift(item);
     if (wsLogEntries.length > 80) {
@@ -910,12 +784,13 @@ const loadTransformerErrors = async () => {
     }
     try {
         const data = await window.BT_API.request("GET", `/transformers/${transformer.id}/errors`);
+        if (String(getSelectedTransformerId()) !== String(transformer.id)) return;
         transformerErrors = Array.isArray(data) ? data : [];
         setErrorsHint(`Wybrany transformator: ${transformer.name}.`);
         renderTransformerErrors();
     } catch (error) {
         transformerErrors = [];
-        setErrorsHint(error?.message || "Blad pobierania bledow transformatora.");
+        setErrorsHint(error?.message || "Błąd pobierania błędów transformatora.");
         renderTransformerErrors();
     }
 };
@@ -940,8 +815,8 @@ const loadTransformers = async () => {
             registers = [];
             selectedRegisterKeys = new Set();
             metricsByKey = {};
-            setStatus("Brak transformatorow. Dodaj je w konfiguracji.", "result--error");
-            setHint("Dodaj transformator, aby uruchomic monitoring.");
+            setStatus("", null);
+            setHint("Dodaj transformator, aby uruchomić monitoring.");
             renderMeterSelect();
             renderPage();
             clearWs();
@@ -950,7 +825,7 @@ const loadTransformers = async () => {
         await loadTransformerErrors();
         await loadMeters();
     } catch (error) {
-        setStatus(error?.message || "Blad pobierania transformatorow.", "result--error");
+        setStatus(error?.message || "Błąd pobierania transformatorów.", "result--error");
     }
 };
 
@@ -965,6 +840,7 @@ const loadMeters = async () => {
     }
     try {
         const data = await window.BT_API.request("GET", `/transformers/${transformer.id}/meters`);
+        if (String(getSelectedTransformerId()) !== String(transformer.id)) return;
         meters = Array.isArray(data) ? data : [];
         if (getSelectedMeterId() && !meters.find((item) => String(item.id) === String(getSelectedMeterId()))) {
             setSelectedMeterId(null);
@@ -976,11 +852,11 @@ const loadMeters = async () => {
         await loadRegisters();
         setHint(
             meters.length
-                ? `Wybrany transformator: ${transformer.name}.`
-                : `Wybrany transformator: ${transformer.name}. Brak miernikow.`
+                ? ""
+                : "Dodaj miernik w konfiguracji instalacji."
         );
     } catch (error) {
-        setStatus(error?.message || "Blad pobierania miernikow.", "result--error");
+        setStatus(error?.message || "Błąd pobierania mierników.", "result--error");
     }
 };
 
@@ -1001,6 +877,7 @@ const loadRegisters = async () => {
     }
     try {
         const data = await window.BT_API.request("GET", `/meters/${meter.id}/registers`);
+        if (String(getSelectedMeterId()) !== String(meter.id)) return;
         registers = Array.isArray(data) ? data : [];
         buildRegisterKeyAliases();
         const available = new Set(registers.map((register) => getRegisterKey(register)));
@@ -1013,11 +890,30 @@ const loadRegisters = async () => {
         }
         const transformer = getSelectedTransformer();
         if (transformer) {
-            setHint(`Transformator: ${transformer.name}. Miernik: ${meter.name}.`);
+            setHint("");
         }
     } catch (error) {
-        setStatus(error?.message || "Blad pobierania rejestrow.", "result--error");
+        setStatus(error?.message || "Błąd pobierania pomiarów.", "result--error");
     }
+};
+
+const fetchMetricHistory = async (transformerId, key, isCurrent) => {
+    const limit = isChartsPage ? 1000 : getMetricLimit();
+    const base = `/transformers/${transformerId}/metrics?key=${encodeURIComponent(key)}&limit=${limit}&order=desc${isChartsPage ? "&resolution=samples" : ""}`;
+    const history = [];
+    let cursor = "";
+    while (isCurrent()) {
+        const points = await window.BT_API.request("GET", base + cursor);
+        if (!isCurrent()) return [];
+        if (!Array.isArray(points)) throw new Error("Nieprawidłowa odpowiedź historii pomiarów.");
+        for (const point of points) history.push(point);
+        if (!isChartsPage || points.length < limit) break;
+        const oldest = points[points.length - 1];
+        const next = `&before=${encodeURIComponent(getMetricTimestamp(oldest))}&beforeSequence=${Number(oldest.sampleId?.split("#").pop() || 0)}`;
+        if (next === cursor) throw new Error("Nie udało się pobrać starszych odczytów.");
+        cursor = next;
+    }
+    return history;
 };
 
 const loadMetricsForSelected = async () => {
@@ -1027,35 +923,40 @@ const loadMetricsForSelected = async () => {
         return;
     }
     if (!selectedRegisterKeys.size) {
-        setStatus("Zaznacz rejestry do podgladu.", "result--error");
+        setStatus("Zaznacz pomiary do podglądu.", "result--error");
         renderPage();
         return;
     }
     setStatus("Pobieram dane...", null);
-    const limit = getMetricLimit();
+    const loadGeneration = ++metricLoadGeneration;
+    const meterId = getSelectedMeterId();
+    let failures = 0;
+    const isCurrent = () => loadGeneration === metricLoadGeneration && String(getSelectedTransformerId()) === String(transformer.id) && getSelectedMeterId() === meterId;
     const entries = Array.from(selectedRegisterKeys);
 
     await Promise.all(
         entries.map(async (key) => {
             try {
-                const points = await window.BT_API.request(
-                    "GET",
-                    `/transformers/${transformer.id}/metrics?key=${encodeURIComponent(key)}&limit=${limit}&order=desc`
-                );
-                metricsByKey[key] = Array.isArray(points)
+                const points = await fetchMetricHistory(transformer.id, key,
+                    () => isCurrent() && selectedRegisterKeys.has(key));
+                if (!isCurrent() || !selectedRegisterKeys.has(key)) return;
+                const livePoints = (metricsByKey[key] || []).filter(point => point._live);
+                const history = Array.isArray(points)
                     ? points.map((point) => ({
                         ...point,
                         _receivedAt: point?._receivedAt || point?.bucketTs || new Date().toISOString()
                     }))
                     : [];
+                metricsByKey[key] = mergeMetricPoints(history, livePoints);
             } catch (error) {
-                metricsByKey[key] = [];
+                failures++;
             }
         })
     );
 
+    if (!isCurrent()) return;
     renderPage();
-    setStatus(`Dane zaktualizowane. Widoczne rejestry: ${entries.length}.`, "result--success");
+    setStatus(failures ? `Nie udało się pobrać danych dla ${failures} pomiarów. Spróbuj ponownie.` : "", failures ? "result--error" : "result--success");
 };
 
 const handleWsMessage = (data) => {
@@ -1069,53 +970,88 @@ const handleWsMessage = (data) => {
         addWsLogEntry(null, data);
         return;
     }
+    if (payload?.type === "ready") {
+        wsAttempts = 0;
+        setWsStatus("Połączenie aktywne", "online");
+        loadMetricsForSelected();
+        return;
+    }
+    if (payload?.type === "error") {
+        setStatus(payload.message || "Błąd danych pomiarowych.", "result--error");
+        return;
+    }
+    if (!payload || typeof payload !== "object" || !payload.key || !payload.bucketTs ||
+        String(payload.transformerId) !== String(getSelectedTransformerId())) return;
     addWsLogEntry(payload, data);
+    window.BTData?.setLastRead(new Date(getMetricTimestamp(payload)).toLocaleString("pl-PL"));
     const normalizedPayload = {
         ...payload,
-        _receivedAt: new Date().toISOString()
+        _receivedAt: new Date().toISOString(),
+        _live: true
     };
     const resolvedKey = resolveMetricKey(payload);
     if (!resolvedKey || !selectedRegisterKeys.has(String(resolvedKey))) {
         return;
     }
     const current = metricsByKey[resolvedKey] || [];
-    metricsByKey[resolvedKey] = [normalizedPayload, ...current].slice(0, getMetricLimit());
+    metricsByKey[resolvedKey] = mergeMetricPoints(current, [normalizedPayload]);
     renderPage();
 };
 
-const connectWs = async () => {
-    const transformer = getSelectedTransformer();
-    if (!transformer || !window.BT_API?.buildWsUrl) {
-        return;
-    }
-    if (ws) {
-        ws.close();
-    }
-    setWsStatus("WebSocket: laczenie...", "warning");
-    if (window.BT_API.refreshAccessToken) {
-        await window.BT_API.refreshAccessToken();
-    }
-    const token = window.BT_API.getAccessToken ? window.BT_API.getAccessToken() : null;
-    if (!token) {
-        setWsStatus("WebSocket: brak tokenu", "warning");
-        return;
-    }
-    const url = window.BT_API.buildWsUrl(
-        `/ws/transformers/${transformer.id}/metrics?token=${encodeURIComponent(token)}`
-    );
-    ws = new WebSocket(url);
-    ws.onopen = () => setWsStatus("WebSocket: online", "online");
-    ws.onclose = () => setWsStatus("WebSocket: offline", "offline");
-    ws.onerror = () => setWsStatus("WebSocket: blad", "warning");
-    ws.onmessage = (event) => handleWsMessage(event.data);
-};
-
 const clearWs = () => {
+    wsGeneration++;
+    clearTimeout(wsRetryTimer);
+    wsRetryTimer = null;
     if (ws) {
+        ws.onclose = null;
+        ws.onmessage = null;
         ws.close();
         ws = null;
     }
-    setWsStatus("WebSocket: offline", "offline");
+    setWsStatus("Połączenie nieaktywne", "offline");
+};
+
+const connectWs = async () => {
+    clearWs();
+    const generation = wsGeneration;
+    const transformer = getSelectedTransformer();
+    if (!transformer || pageLeaving || !window.BT_API?.buildWsUrl) return;
+    const retry = () => {
+        if (generation !== wsGeneration || pageLeaving) return;
+        setWsStatus("Brak połączenia · ponawianie", "warning");
+        const delay = Math.min(30000, 1000 * 2 ** Math.min(wsAttempts++, 5)) + Math.random() * 500;
+        wsRetryTimer = setTimeout(connectWs, delay);
+    };
+    setWsStatus("Łączenie…", "warning");
+    try {
+        const token = await window.BT_API.refreshAccessToken();
+        if (generation !== wsGeneration || pageLeaving) return;
+        if (!token) {
+            setWsStatus("Sesja wygasła", "warning");
+            return;
+        }
+        const socket = new WebSocket(window.BT_API.buildWsUrl(`/ws/transformers/${transformer.id}/metrics`));
+        ws = socket;
+        socket.onopen = () => {
+            if (generation !== wsGeneration) { socket.close(); return; }
+            socket.send(JSON.stringify({ type: "auth", token }));
+        };
+        socket.onmessage = event => {
+            if (generation === wsGeneration) handleWsMessage(event.data);
+        };
+        socket.onclose = event => {
+            if (generation !== wsGeneration) return;
+            ws = null;
+            if (event.code === 1003 || (event.code === 1008 && !event.reason.includes("expired"))) {
+                setWsStatus("Brak dostępu do transformatora", "warning");
+                return;
+            }
+            retry();
+        };
+        socket.onerror = () => {
+            if (generation === wsGeneration) setWsStatus("Błąd połączenia", "warning");
+        };
+    } catch { retry(); }
 };
 
 if (transformerSelect) {
@@ -1144,7 +1080,7 @@ if (meterSelect) {
 }
 
 if (refreshBtn) {
-    refreshBtn.addEventListener("click", () => loadTransformers());
+    refreshBtn.addEventListener("click", async () => { clearWs(); await loadTransformers(); connectWs(); });
 }
 
 if (loadBtn) {
@@ -1175,7 +1111,7 @@ if (registerSelectAll) {
 
 if (registerClear) {
     registerClear.addEventListener("click", () => {
-        autoSelectRegisters();
+        selectedRegisterKeys.clear();
         pruneMetricsStore();
         renderPage();
     });
@@ -1185,22 +1121,21 @@ window.addEventListener("resize", () => {
     if (!isChartsPage) {
         return;
     }
-    document.querySelectorAll(".metric-card__chart canvas").forEach((canvas, index) => {
-        const key = canvas.closest(".metric-card")?.querySelector(".metric-card__title")?.textContent;
+    document.querySelectorAll(".metric-card__chart canvas").forEach((canvas) => {
+        const key = canvas.dataset.metricKey;
         if (!key) {
             return;
         }
-        drawMiniChart(canvas, getMetricSeries(key), colorPalette[index % colorPalette.length]);
+        window.BTCharts.render(canvas, getMetricSeries(key), canvas.dataset);
     });
 });
 
-window.addEventListener("beforeunload", () => {
-    if (ws) {
-        ws.close();
-    }
-});
+window.addEventListener("pagehide", () => { pageLeaving = true; clearWs(); clearTimeout(autoLoadTimer); });
+window.addEventListener("pageshow", event => { if (event.persisted) { pageLeaving = false; connectWs(); } });
+window.addEventListener("online", () => { if (!ws) { wsAttempts = 0; connectWs(); } });
+window.addEventListener("bt-theme-change", renderPage);
 
-setWsStatus("WebSocket: offline", "offline");
+setWsStatus("Połączenie nieaktywne", "offline");
 setStatus("Wybierz transformator i miernik.", null);
 renderPage();
 loadTransformers().then(() => connectWs());

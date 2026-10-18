@@ -3,81 +3,36 @@ const statMeters = document.getElementById("statMeters");
 const statRegisters = document.getElementById("statRegisters");
 const statLastRead = document.getElementById("statLastRead");
 const roleNote = document.getElementById("roleNote");
-
-const updateRoleNote = () => {
-    const isAdmin = Boolean(window.BT_AUTH?.isAdmin);
-    if (roleNote) {
-        roleNote.textContent = isAdmin
-            ? "Masz role admin - mozesz zarzadzac wszystkimi uzytkownikami i danymi."
-            : "Rola user ma dostep do wlasnych danych. Skontaktuj sie z administratorem po role admin.";
-    }
-};
+const dashboardStatus = document.getElementById("dashboardStatus");
 
 const updateStats = async () => {
-    if (!window.BT_API?.request) {
-        return;
-    }
+    roleNote.textContent = window.BT_AUTH?.isAdmin
+        ? "Widok administratora obejmuje wszystkie instalacje."
+        : "Widoczne są instalacje przypisane do Twojego konta.";
+    statLastRead.textContent = window.BTData?.getLastRead() || "Brak";
     try {
         const transformers = await window.BT_API.request("GET", "/transformers");
-        const list = Array.isArray(transformers) ? transformers : [];
-        let meterCount = 0;
-        let registerCount = 0;
-
-        await Promise.all(
-            list.map(async (transformer) => {
-                try {
-                    const meters = await window.BT_API.request(
-                        "GET",
-                        `/transformers/${transformer.id}/meters`
-                    );
-                    const meterList = Array.isArray(meters) ? meters : [];
-                    meterCount += meterList.length;
-                    await Promise.all(
-                        meterList.map(async (meter) => {
-                            try {
-                                const registers = await window.BT_API.request(
-                                    "GET",
-                                    `/meters/${meter.id}/registers`
-                                );
-                                registerCount += Array.isArray(registers) ? registers.length : 0;
-                            } catch (error) {
-                                // ignore register errors in stats
-                            }
-                        })
-                    );
-                } catch (error) {
-                    // ignore meter errors in stats
+        let metersCount = 0;
+        let registersCount = 0;
+        let incomplete = false;
+        // Bound concurrent requests instead of flooding the connection pool.
+        for (const transformer of transformers) {
+            try {
+                const meters = await window.BT_API.request("GET", `/transformers/${transformer.id}/meters`);
+                metersCount += meters.length;
+                for (const meter of meters) {
+                    const registers = await window.BT_API.request("GET", `/meters/${meter.id}/registers`);
+                    registersCount += registers.length;
                 }
-            })
-        );
-
-        if (statTransformers) {
-            statTransformers.textContent = String(list.length);
+            } catch { incomplete = true; }
         }
-        if (statMeters) {
-            statMeters.textContent = String(meterCount);
-        }
-        if (statRegisters) {
-            statRegisters.textContent = String(registerCount);
-        }
-        if (statLastRead) {
-            statLastRead.textContent = window.BTData ? window.BTData.getLastRead() : "Brak";
-        }
-    } catch (error) {
-        if (statTransformers) {
-            statTransformers.textContent = "0";
-        }
-        if (statMeters) {
-            statMeters.textContent = "0";
-        }
-        if (statRegisters) {
-            statRegisters.textContent = "0";
-        }
-        if (statLastRead) {
-            statLastRead.textContent = window.BTData ? window.BTData.getLastRead() : "Brak";
-        }
+        statTransformers.textContent = String(transformers.length);
+        statMeters.textContent = incomplete ? "—" : String(metersCount);
+        statRegisters.textContent = incomplete ? "—" : String(registersCount);
+        dashboardStatus.textContent = incomplete ? "Część danych jest niedostępna. Odśwież stronę, aby spróbować ponownie." : "";
+    } catch {
+        for (const element of [statTransformers, statMeters, statRegisters]) element.textContent = "—";
+        dashboardStatus.textContent = "Nie udało się pobrać podsumowania. Sprawdź połączenie i odśwież stronę.";
     }
 };
-
-updateRoleNote();
 updateStats();

@@ -20,6 +20,7 @@ class JwtServiceImpl(
             .withAudience(cfg.jwtAudience)
             .withSubject(userId.toString())
             .withClaim("role", role.name)
+            .withClaim("type", "access")
             .withIssuedAt(Date(System.currentTimeMillis()))
             .withExpiresAt(Date(System.currentTimeMillis() + 15 * 60 * 1000))                 // 15 min
             .sign(algorithm)
@@ -27,6 +28,8 @@ class JwtServiceImpl(
 
     override fun generateRefreshToken(userId: UUID): String {
         return JWT.create()
+            .withJWTId(UUID.randomUUID().toString())
+            .withClaim("type", "refresh")
             .withIssuer(cfg.jwtIssuer)
             .withAudience(cfg.jwtAudience)
             .withSubject(userId.toString())

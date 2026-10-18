@@ -1,4 +1,6 @@
 (() => {
+    const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+    window.BT_HTML = (strings, ...values) => strings.reduce((html, part, index) => html + part + (index < values.length ? escapeHtml(values[index]) : ""), "");
     const body = document.body;
     if (!body) {
         return;
@@ -21,10 +23,12 @@
         body.classList.toggle("theme-dark", theme === "dark");
         body.classList.toggle("theme-light", theme === "light");
         body.dataset.theme = theme;
+        document.documentElement.dataset.bsTheme = theme;
+        window.dispatchEvent(new Event("bt-theme-change"));
         if (themeToggle) {
             const isDark = theme === "dark";
             themeToggle.setAttribute("aria-pressed", String(isDark));
-            themeToggle.textContent = isDark ? "Tryb: Ciemny" : "Tryb: Jasny";
+            themeToggle.textContent = isDark ? "Jasny motyw" : "Ciemny motyw";
         }
     };
 
@@ -44,6 +48,9 @@
     }
 
     initTheme();
+    document.querySelectorAll("[data-current-date]").forEach(el => {
+        el.textContent = new Date().toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" });
+    });
 
     const defaultA11y = {
         textSize: 0,
@@ -119,8 +126,11 @@
         if (!a11yPanel || !a11yToggle) {
             return;
         }
+        const restoreFocus = !open && a11yPanel.contains(document.activeElement);
         a11yPanel.classList.toggle("is-open", open);
         a11yToggle.setAttribute("aria-expanded", String(open));
+        if (open) a11yClose?.focus();
+        else if (restoreFocus) a11yToggle.focus();
     };
 
     const isPanelOpen = () => Boolean(a11yPanel && a11yPanel.classList.contains("is-open"));

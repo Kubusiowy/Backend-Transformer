@@ -1,6 +1,3 @@
-FROM ubuntu:latest
-LABEL authors="firkowski"
-
 # 1) ETAP: build (tu jest Gradle + JDK)
 FROM gradle:8.7-jdk21 AS build
 WORKDIR /app
@@ -17,14 +14,14 @@ RUN ./gradlew dependencies --no-daemon || true
 COPY . .
 
 # 5) Budujemy JAR do obrazu runtime; testy odpalaj osobno (CI/lokalnie z DB)
-RUN ./gradlew clean build -x test --no-daemon
+RUN ./gradlew test buildFatJar --no-daemon
 
 # 6) ETAP: runtime (tu nie ma Gradle, tylko JRE)
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 # 7) Kopiujemy gotowy JAR z etapu build do runtime
-COPY --from=build /app/build/libs/*.jar /app/app.jar
+COPY --from=build /app/build/libs/app-all.jar /app/app.jar
 
 # 8) Ktor domyślnie często leci na 8080
 EXPOSE 8080

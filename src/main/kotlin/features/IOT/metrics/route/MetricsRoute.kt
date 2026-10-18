@@ -40,19 +40,6 @@ fun Route.metricsRoute() {
         return transformer
     }
 
-    fun MetricsRepository.MetricRecord.toResponse() = MetricPointResponse(
-        transformerId = transformerId.toString(),
-        key = key,
-        bucketTs = bucketTs.toString(),
-        lastValue = lastValue,
-        avgValue = avgValue,
-        minValue = minValue,
-        maxValue = maxValue,
-        count = count,
-        unit = unit,
-        label = label,
-    )
-
     fun parseTimestamp(value: String?, field: String): LocalDateTime? {
         if (value.isNullOrBlank()) {
             return null
@@ -80,10 +67,23 @@ fun Route.metricsRoute() {
             val limit = call.request.queryParameters["limit"]?.toIntOrNull()?.coerceIn(1, 5000) ?: 300
             val from = parseTimestamp(call.request.queryParameters["from"], "from")
             val to = parseTimestamp(call.request.queryParameters["to"], "to")
+            if (from != null && to != null && from > to) throw BadRequest("from must not be after to")
             val order = call.request.queryParameters["order"]?.lowercase()
             val orderAsc = order != "desc"
+            val before = parseTimestamp(call.request.queryParameters["before"], "before")
+            val beforeSequence = call.request.queryParameters["beforeSequence"]?.let {
+                it.toIntOrNull()?.takeIf { value -> value >= 0 }
+                    ?: throw BadRequest("Invalid beforeSequence")
+            } ?: 0
+            if (before != null && orderAsc) throw BadRequest("before requires order=desc")
+            if (before == null && call.request.queryParameters["beforeSequence"] != null) {
+                throw BadRequest("beforeSequence requires before")
+            }
 
-            val points = metricsRepo.list(transformerId, key, limit, from, to, orderAsc)
+            val resolution = call.request.queryParameters["resolution"] ?: "minute"
+            if (resolution !in listOf("minute", "samples")) throw BadRequest("Invalid resolution")
+            val points = metricsRepo.list(transformerId, key, limit, from, to, orderAsc,
+                samples = resolution == "samples", before = before, beforeSequence = beforeSequence)
             call.respond(HttpStatusCode.OK, points.map { it.toResponse() })
         }
 
@@ -107,8 +107,11 @@ fun Route.metricsRoute() {
                 value = req.value,
                 unit = req.unit,
                 label = req.label,
+                timestamp = timestamp,
             )
-            call.respond(HttpStatusCode.Created, record.toResponse())
+            val response = record.toResponse()
+            MetricsWsHub.broadcast(transformerId, kotlinx.serialization.json.Json.encodeToString(MetricPointResponse.serializer(), response))
+            call.respond(HttpStatusCode.Created, response)
         }
     }
 

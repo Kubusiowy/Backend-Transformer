@@ -7,6 +7,7 @@ import com.example.core.model.user.Role.UserRole
 import com.example.core.model.user.User
 import com.example.features.auth.common.mappers.toUser
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.lessEq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
@@ -20,12 +21,19 @@ import java.util.UUID
 class AuthRepository {
 
     suspend fun addRefreshToken(userId: String, tokenRefreshHash: String,expiresAt: LocalDateTime) = dbQuery {
+        Users.selectAll().where { Users.id eq userId }.forUpdate().firstOrNull()
+            ?: throw com.example.plugins.StatusPage.errors.Unauthorized("Account no longer exists")
+        RefreshSessions.deleteWhere { (RefreshSessions.userId eq userId) and (RefreshSessions.expiresAt lessEq LocalDateTime.now()) }
         RefreshSessions.insert {
             it[RefreshSessions.userId] = userId
             it[RefreshSessions.tokenHash] = tokenRefreshHash
             it[RefreshSessions.createdAt] = LocalDateTime.now()
             it[RefreshSessions.expiresAt] = expiresAt
         }
+    }
+
+    suspend fun revokeRefreshToken(tokenHash: String) = dbQuery {
+        RefreshSessions.deleteWhere { RefreshSessions.tokenHash eq tokenHash }
     }
 
 
@@ -82,6 +90,7 @@ class AuthRepository {
         }
 
         suspend fun updatePasswordHash(id: UUID, newHashPass: String): Int = dbQuery {
+            RefreshSessions.deleteWhere { RefreshSessions.userId eq id.toString() }
             Users.update({ Users.id eq id.toString() }) {
                 it[passwordHash] = newHashPass
             }
@@ -94,6 +103,9 @@ class AuthRepository {
         }
 
         suspend fun deleteById(id: UUID) = dbQuery {
+            Users.selectAll().where { Users.id eq id.toString() }.forUpdate().firstOrNull() ?: return@dbQuery 0
+            com.example.features.IOT.transformer.data.deleteUserTransformers(id)
+            RefreshSessions.deleteWhere { RefreshSessions.userId eq id.toString() }
             Users.deleteWhere { Users.id eq id.toString() }
         }
 

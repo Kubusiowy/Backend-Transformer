@@ -44,7 +44,7 @@ const requireAuth = () => {
 const updateRoleLabels = () => {
     const role = window.BT_AUTH?.role || "user";
     document.querySelectorAll("[data-role-label]").forEach((el) => {
-        el.textContent = `Rola: ${role}`;
+        el.textContent = role === "admin" ? "Administrator" : "Użytkownik";
     });
 };
 
@@ -86,7 +86,8 @@ const guardAdminPage = () => {
     return true;
 };
 
-const handleLogout = () => {
+const handleLogout = async () => {
+    const refreshToken = sessionStorage.getItem(STORAGE.refresh) || localStorage.getItem(STORAGE.refresh);
     localStorage.removeItem(STORAGE.refresh);
     localStorage.removeItem(STORAGE.user);
     localStorage.removeItem(STORAGE.role);
@@ -95,6 +96,10 @@ const handleLogout = () => {
     sessionStorage.removeItem(STORAGE.refresh);
     sessionStorage.removeItem(STORAGE.access);
     updateAuthFromStorage();
+    if (refreshToken && window.BT_API) {
+        try { await window.BT_API.request("POST", "/auth/logout", { refreshToken }); }
+        catch { /* Local sign-out remains available when offline. */ }
+    }
     window.location.href = "/static/index.html";
 };
 
@@ -102,11 +107,15 @@ const startSilentRefresh = async () => {
     if (!window.BT_AUTH?.refreshToken || !window.BT_API?.refreshAccessToken) {
         return;
     }
-    await window.BT_API.refreshAccessToken();
-    updateAuthFromStorage();
-    setInterval(() => {
-        window.BT_API.refreshAccessToken().then(() => updateAuthFromStorage());
-    }, 600 * 1000);
+    const refresh = async () => {
+        try {
+            const token = await window.BT_API.refreshAccessToken();
+            if (!token) { handleLogout(); return; }
+            updateAuthFromStorage();
+        } catch { /* Keep the session on temporary network failures; requests can retry. */ }
+    };
+    await refresh();
+    setInterval(refresh, 600 * 1000);
 };
 
 const syncProfile = async () => {

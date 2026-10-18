@@ -7,6 +7,9 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.application.log
 import io.ktor.server.plugins.ContentTransformationException
+import io.ktor.server.plugins.BadRequestException
+import kotlinx.coroutines.CancellationException
+import org.jetbrains.exposed.exceptions.ExposedSQLException
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
@@ -14,6 +17,16 @@ import io.ktor.server.response.respond
 
 fun Application.configureStatusPage() {
     install(StatusPages) {
+        exception<CancellationException> { _, cause -> throw cause }
+        exception<BadRequestException> { call, _ ->
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid request body", 400, call.request.path()))
+        }
+        exception<ExposedSQLException> { call, cause ->
+            val conflict = cause.sqlState?.startsWith("23") == true
+            if (!conflict) call.application.log.error("Database request failed", cause)
+            val status = if (conflict) HttpStatusCode.Conflict else HttpStatusCode.ServiceUnavailable
+            call.respond(status, ErrorResponse(if (conflict) "Record conflicts with existing data" else "Database temporarily unavailable", status.value, call.request.path()))
+        }
 
         exception<ApiError> { call, e ->
             call.respond(e.status,ErrorResponse(

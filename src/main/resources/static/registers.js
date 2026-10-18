@@ -23,6 +23,7 @@ const setStatus = (message, state) => {
         return;
     }
     statusBody.textContent = message;
+    statusBox.hidden = !message;
     statusBox.classList.remove("result--success", "result--error");
     if (state) {
         statusBox.classList.add(state);
@@ -95,17 +96,17 @@ const renderTransformerSelect = () => {
     if (!transformers.length) {
         const option = document.createElement("option");
         option.value = "";
-        option.textContent = "Brak transformatorow";
+        option.textContent = "Brak transformatorów";
         transformerSelect.append(option);
         transformerSelect.disabled = true;
-        setHint("Nie masz transformatorow. Dodaj je w zakladce Transformatory.");
+        setHint("Dodaj transformator, aby skonfigurować pomiary.");
         return;
     }
     transformerSelect.disabled = false;
     transformers.forEach((transformer) => {
         const option = document.createElement("option");
         option.value = String(transformer.id);
-        option.textContent = `${transformer.name} (${transformer.id})`;
+        option.textContent = transformer.name;
         transformerSelect.append(option);
     });
     if (getSelectedTransformerId()) {
@@ -122,7 +123,7 @@ const renderMeterSelect = () => {
     if (!meters.length) {
         const option = document.createElement("option");
         option.value = "";
-        option.textContent = "Brak miernikow";
+        option.textContent = "Brak mierników";
         meterSelect.append(option);
         meterSelect.disabled = true;
         return;
@@ -131,7 +132,7 @@ const renderMeterSelect = () => {
     meters.forEach((meter) => {
         const option = document.createElement("option");
         option.value = String(meter.id);
-        option.textContent = `${meter.name} (${meter.deviceCode})`;
+        option.textContent = meter.name;
         meterSelect.append(option);
     });
     if (getSelectedMeterId()) {
@@ -148,6 +149,7 @@ const renderRegisters = () => {
         return;
     }
     registerList.innerHTML = "";
+    document.getElementById("registerNext").hidden = !registers.length;
     if (!registers.length) {
         registerEmpty.style.display = "block";
         registerList.style.display = "none";
@@ -185,7 +187,7 @@ const renderRegisters = () => {
         }
         const statusTag = document.createElement("span");
         statusTag.className = "tag";
-        statusTag.textContent = register.enabled ? "Aktywny" : "Wylaczony";
+        statusTag.textContent = register.enabled ? "Aktywny" : "Wyłączony";
         tags.append(statusTag);
 
         main.append(name, meta, tags);
@@ -196,7 +198,7 @@ const renderRegisters = () => {
         const deleteBtn = document.createElement("button");
         deleteBtn.type = "button";
         deleteBtn.className = "btn btn--ghost btn--small";
-        deleteBtn.textContent = "Usun";
+        deleteBtn.textContent = "Usuń";
         deleteBtn.addEventListener("click", () => removeRegister(register.id));
 
         actions.append(deleteBtn);
@@ -222,7 +224,7 @@ const loadTransformers = async () => {
         renderTransformerSelect();
         await loadMeters();
     } catch (error) {
-        setStatus(error?.message || "Blad pobierania transformatorow.", "result--error");
+        setStatus(error?.message || "Błąd pobierania transformatorów.", "result--error");
     }
 };
 
@@ -233,7 +235,7 @@ const loadMeters = async () => {
         renderMeterSelect();
         registers = [];
         renderRegisters();
-        setHint("Wybierz transformator, aby zobaczyc mierniki.");
+        setHint("Wybierz transformator, aby zobaczyć mierniki.");
         updateSelectionDetail();
         return;
     }
@@ -249,13 +251,13 @@ const loadMeters = async () => {
         renderMeterSelect();
         await loadRegisters();
         if (!meters.length) {
-            setHint(`Wybrany transformator: ${transformer.name}. Brak miernikow.`);
+            setHint("Dodaj miernik, aby skonfigurować pomiary.");
         } else {
-            setHint(`Wybrany transformator: ${transformer.name}.`);
+            setHint("");
         }
         updateSelectionDetail();
     } catch (error) {
-        setStatus(error?.message || "Blad pobierania miernikow.", "result--error");
+        setStatus(error?.message || "Błąd pobierania mierników.", "result--error");
     }
 };
 
@@ -270,7 +272,7 @@ const loadRegisters = async () => {
         renderRegisters();
         const transformer = getSelectedTransformer();
         if (transformer) {
-            setHint(`Wybrany transformator: ${transformer.name}. Wybierz miernik, aby zobaczyc rejestry.`);
+            setHint("Wybierz miernik, aby zobaczyć pomiary.");
         }
         updateSelectionDetail();
         return;
@@ -281,11 +283,11 @@ const loadRegisters = async () => {
         renderRegisters();
         const transformer = getSelectedTransformer();
         if (transformer) {
-            setHint(`Wybrany transformator: ${transformer.name}. Miernik: ${meter.name}.`);
+            setHint("");
         }
         updateSelectionDetail();
     } catch (error) {
-        setStatus(error?.message || "Blad pobierania rejestrow.", "result--error");
+        setStatus(error?.message || "Błąd pobierania rejestrów.", "result--error");
     }
 };
 
@@ -313,12 +315,12 @@ const addRegister = async (payload) => {
     try {
         await window.BT_API.request("POST", `/meters/${meter.id}/registers`, payload);
         await loadRegisters();
-        setStatus("Rejestr dodany.", "result--success");
+        setStatus("Pomiar dodany.", "result--success");
         if (registerForm) {
             registerForm.reset();
         }
     } catch (error) {
-        setStatus(error?.message || "Blad zapisu rejestru.", "result--error");
+        setStatus(error?.message || "Błąd zapisu rejestru.", "result--error");
     }
 };
 
@@ -335,9 +337,9 @@ const removeRegister = async (id) => {
     try {
         await window.BT_API.request("DELETE", `/meters/${meter.id}/registers/${id}`);
         await loadRegisters();
-        setStatus("Rejestr usuniety.", "result--success");
+        setStatus("Rejestr usunięty.", "result--success");
     } catch (error) {
-        setStatus(error?.message || "Blad usuwania rejestru.", "result--error");
+        setStatus(error?.message || "Błąd usuwania rejestru.", "result--error");
     }
 };
 
@@ -373,7 +375,8 @@ if (registerForm) {
         event.preventDefault();
         const formData = new FormData(registerForm);
         const name = String(formData.get("name") || "").trim();
-        const address = Number(formData.get("address") || 0);
+        const addressText = String(formData.get("address") || "").trim();
+        const address = Number(addressText);
         const dataType = String(formData.get("dataType") || "INT16");
         const unit = String(formData.get("unit") || "").trim();
 
@@ -381,8 +384,8 @@ if (registerForm) {
             setStatus("Pole 'Nazwa' jest wymagane.", "result--error");
             return;
         }
-        if (!Number.isFinite(address)) {
-            setStatus("Pole 'Adres' jest wymagane.", "result--error");
+        if (!addressText || !Number.isInteger(address) || address < 0 || address > 65535) {
+            setStatus("Wpisz adres rejestru od 0 do 65535 z instrukcji miernika.", "result--error");
             return;
         }
 
@@ -395,6 +398,6 @@ if (registerForm) {
     });
 }
 
-setStatus("Wybierz transformator i miernik.", null);
+setStatus("", null);
 loadTransformers();
 updateSelectionDetail();

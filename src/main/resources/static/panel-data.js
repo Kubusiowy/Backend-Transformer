@@ -1,3 +1,4 @@
+(() => {
 const STORAGE = window.BT_STORAGE || {
     selected: "bt_transformer_selected",
     meterSelected: "bt_meter_selected",
@@ -50,3 +51,4 @@ window.BTData = {
     getLastRead,
     setLastRead
 };
+})();

@@ -1,110 +1,74 @@
 (() => {
-    const CONFIG = window.BT_CONFIG || {};
-    const API_BASE = (CONFIG.apiBase || "").replace(/\/$/, "");
-    const WS_BASE =
-        (CONFIG.wsBase || "").replace(/\/$/, "") ||
-        `${window.location.protocol === "https:" ? "wss://" : "ws://"}${window.location.host}`;
+    const config = window.BT_CONFIG || {};
+    const base = (config.apiBase || "").replace(/\/$/, "");
+    const wsBase = (config.wsBase || "").replace(/\/$/, "") || `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}`;
+    const buildUrl = path => `${base}${path.startsWith("/") ? path : `/${path}`}`;
+    const buildWsUrl = path => `${wsBase}${path.startsWith("/") ? path : `/${path}`}`;
+    const getAccessToken = () => sessionStorage.getItem("bt_access_token");
+    const getRefreshToken = () => sessionStorage.getItem("bt_refresh_token") || localStorage.getItem("bt_refresh_token");
+    let refreshPromise = null;
 
-    const STORAGE = window.BT_STORAGE || {
-        refresh: "bt_refresh_token",
-        access: "bt_access_token"
+    const fetchWithTimeout = async (url, options) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 15000);
+        try {
+            const response = await fetch(url, { ...options, signal: controller.signal });
+            // Read the body before clearing the timeout, too.
+            const text = await response.text();
+            let data = null;
+            if (text) {
+                try { data = JSON.parse(text); }
+                catch { if (response.ok) throw new Error("Serwer zwrócił niepoprawną odpowiedź."); }
+            }
+            return { response, data };
+        } catch (error) {
+            if (error.name === "AbortError") throw new Error("Serwer nie odpowiada. Spróbuj ponownie.");
+            throw error;
+        } finally { clearTimeout(timer); }
     };
 
-    const buildUrl = (path) => {
-        if (!path) {
-            return API_BASE || "";
-        }
-        if (/^https?:\/\//i.test(path)) {
-            return path;
-        }
-        const normalized = path.startsWith("/") ? path : `/${path}`;
-        return `${API_BASE}${normalized}`;
-    };
-
-    const buildWsUrl = (path) => {
-        if (!path) {
-            return WS_BASE;
-        }
-        if (/^wss?:\/\//i.test(path)) {
-            return path;
-        }
-        const normalized = path.startsWith("/") ? path : `/${path}`;
-        return `${WS_BASE}${normalized}`;
-    };
-
-    const getAccessToken = () => sessionStorage.getItem(STORAGE.access);
-    const getRefreshToken =
-        () => sessionStorage.getItem(STORAGE.refresh) || localStorage.getItem(STORAGE.refresh);
-
-    const refreshAccessToken = async () => {
+    const refreshAccessToken = () => {
+        if (refreshPromise) return refreshPromise;
         const refreshToken = getRefreshToken();
-        if (!refreshToken) {
-            return null;
-        }
-        const response = await fetch(buildUrl("/auth/refresh"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refreshToken })
-        });
-        if (!response.ok) {
-            return null;
-        }
-        const data = await response.json().catch(() => null);
-        const nextAccess = data?.accessToken || null;
-        if (nextAccess) {
-            sessionStorage.setItem(STORAGE.access, nextAccess);
-        }
-        return nextAccess;
+        if (!refreshToken) return Promise.resolve(null);
+        refreshPromise = (async () => {
+            const { response, data } = await fetchWithTimeout(buildUrl("/auth/refresh"), {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ refreshToken })
+            });
+            if (getRefreshToken() !== refreshToken) return null;
+            if (response.status === 401 || response.status === 400) {
+                sessionStorage.removeItem("bt_access_token");
+                sessionStorage.removeItem("bt_refresh_token");
+                localStorage.removeItem("bt_refresh_token");
+                return null;
+            }
+            if (!response.ok) throw new Error(data?.message || "Nie udało się odnowić sesji.");
+            if (!data?.accessToken) throw new Error("Brak tokenu w odpowiedzi serwera.");
+            sessionStorage.setItem("bt_access_token", data.accessToken);
+            return data.accessToken;
+        })().finally(() => { refreshPromise = null; });
+        return refreshPromise;
     };
 
-    const apiRequest = async (method, url, body) => {
+    const request = async (method, path, body) => {
         const headers = { "Content-Type": "application/json" };
         const token = getAccessToken();
-        if (token) {
-            headers.Authorization = `Bearer ${token}`;
-        }
-        const response = await fetch(buildUrl(url), {
-            method,
-            headers,
-            body: body ? JSON.stringify(body) : undefined
-        });
-
-        if (response.status === 401) {
-            const refreshed = await refreshAccessToken();
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const options = { method, headers, body: body === undefined ? undefined : JSON.stringify(body) };
+        let result = await fetchWithTimeout(buildUrl(path), options);
+        if (result.response.status === 401 && !path.startsWith("/auth/")) {
+            const refreshed = getAccessToken() !== token ? getAccessToken() : await refreshAccessToken();
             if (refreshed) {
                 headers.Authorization = `Bearer ${refreshed}`;
-                const retry = await fetch(buildUrl(url), {
-                    method,
-                    headers,
-                    body: body ? JSON.stringify(body) : undefined
-                });
-                if (!retry.ok) {
-                    const errData = await retry.json().catch(() => null);
-                    throw new Error(errData?.message || "Request failed");
-                }
-                if (retry.status === 204) {
-                    return null;
-                }
-                return retry.json().catch(() => null);
+                result = await fetchWithTimeout(buildUrl(path), options);
             }
-            throw new Error("Unauthorized");
         }
-
-        if (!response.ok) {
-            const errData = await response.json().catch(() => null);
-            throw new Error(errData?.message || "Request failed");
+        if (!result.response.ok) {
+            const error = new Error(result.response.status === 401 ? "Unauthorized" : result.data?.message || `Błąd serwera (${result.response.status}).`);
+            error.status = result.response.status;
+            throw error;
         }
-        if (response.status === 204) {
-            return null;
-        }
-        return response.json().catch(() => null);
+        return result.data;
     };
-
-    window.BT_API = {
-        request: apiRequest,
-        refreshAccessToken,
-        buildUrl,
-        buildWsUrl,
-        getAccessToken
-    };
+    window.BT_API = { request, refreshAccessToken, buildUrl, buildWsUrl, getAccessToken };
 })();

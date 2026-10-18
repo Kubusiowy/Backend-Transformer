@@ -1,5 +1,24 @@
 # backendTransformer
 
+## Panel Bootstrap i testy
+
+Interfejs jest dostępny pod `/static/index.html`. Wszystkie zasoby Bootstrap są lokalne w `src/main/resources/static/vendor`.
+
+Podgląd bez dostępu do właściwej bazy i bez konfiguracji `.env`:
+
+```sh
+./gradlew previewIsolated
+```
+
+Otwórz `http://127.0.0.1:8087`. Testowy administrator: `preview@example.test`, hasło `PreviewOnly123`. To konto istnieje wyłącznie w tym podglądzie; dane są usuwane po zakończeniu procesu. Można też utworzyć zwykłego użytkownika przez formularz rejestracji.
+
+```sh
+./gradlew test buildFatJar --no-daemon
+node src/test/js/frontend.test.cjs
+```
+
+Gotowa paczka serwera: `build/libs/app-all.jar`. [Przegląd zmian, uwagi wdrożeniowe i ograniczenia](docs/REVIEW.md).
+
 This project was created using the [Ktor Project Generator](https://start.ktor.io).
 
 Here are some useful links to get you started:

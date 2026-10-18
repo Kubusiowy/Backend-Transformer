@@ -33,7 +33,7 @@ val AuthModule = module {
     single { RegisterService(get(), get()) }
     single { LoginService(get(), get(),get()) }
 
-    single { RefreshService(get(), get(), get()) }
+    single { RefreshService(get(), get()) }
 }
 
 val IotModule = module {

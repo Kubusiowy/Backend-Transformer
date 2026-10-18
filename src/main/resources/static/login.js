@@ -24,6 +24,7 @@ let mode = "login";
 
 const setResult = (message, state) => {
     resultBody.textContent = message;
+    result.hidden = !message;
     result.classList.remove("result--success", "result--error");
     if (state) {
         result.classList.add(state);
@@ -39,23 +40,23 @@ const setMode = (nextMode) => {
     });
 
     if (mode === "register") {
-        formTitle.textContent = "Zarejestruj konto";
-        formSubtitle.textContent = "Utworz konto i od razu wejdziesz do panelu.";
-        submitBtn.textContent = "Zarejestruj i wejdz";
+        formTitle.textContent = "Załóż konto";
+        formSubtitle.textContent = "Hasło musi mieć co najmniej 8 znaków.";
+        submitBtn.textContent = "Załóż konto";
         repeatField.style.display = "grid";
         if (rememberRow) {
             rememberRow.style.display = "flex";
         }
-        setResult("Wypelnij dane rejestracji.", null);
+        setResult("", null);
     } else {
-        formTitle.textContent = "Zaloguj sie";
-        formSubtitle.textContent = "Podaj email i haslo, aby wejsc do panelu.";
-        submitBtn.textContent = "Zaloguj sie";
+        formTitle.textContent = "Zaloguj się";
+        formSubtitle.textContent = "";
+        submitBtn.textContent = "Zaloguj się";
         repeatField.style.display = "none";
         if (rememberRow) {
             rememberRow.style.display = "flex";
         }
-        setResult("Wprowadz dane logowania.", null);
+        setResult("", null);
     }
 };
 
@@ -146,6 +147,7 @@ const saveTokens = (loginResult, email, remember) => {
 
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (submitBtn.disabled) return;
 
     const formData = new FormData(form);
     const email = String(formData.get("email") || "").trim();
@@ -153,22 +155,23 @@ form.addEventListener("submit", async (event) => {
     const passwordRepeat = String(formData.get("passwordRepeat") || "");
 
     if (!email || !password) {
-        setResult("Wypelnij wszystkie pola.", "result--error");
+        setResult("Wypełnij wszystkie pola.", "result--error");
         return;
     }
 
     if (mode === "register") {
         if (!passwordRepeat) {
-            setResult("Powtorz haslo.", "result--error");
+            setResult("Powtórz hasło.", "result--error");
             return;
         }
         if (password !== passwordRepeat) {
-            setResult("Hasla nie sa takie same.", "result--error");
+            setResult("Hasła nie są takie same.", "result--error");
             return;
         }
     }
 
     setResult(mode === "register" ? "Rejestracja..." : "Logowanie...", null);
+    submitBtn.disabled = true;
 
     try {
         if (mode === "register") {
@@ -181,10 +184,12 @@ form.addEventListener("submit", async (event) => {
         const remember = Boolean(rememberBox?.checked);
         saveTokens(loginResult, email, remember);
 
-        setResult("Zalogowano. Przekierowuje do panelu...", "result--success");
+        setResult("Zalogowano. Przekierowuję do panelu...", "result--success");
         window.location.href = "/static/panel.html";
     } catch (error) {
-        setResult(error?.message || "Blad polaczenia z serwerem.", "result--error");
+        setResult(error?.message || "Błąd połączenia z serwerem.", "result--error");
+    } finally {
+        submitBtn.disabled = false;
     }
 });
 
@@ -217,11 +222,11 @@ const autoLogin = async () => {
     setResult("Odnawiam sesje...", null);
     const refreshed = await window.BT_API.refreshAccessToken();
     if (refreshed) {
-        setResult("Sesja aktywna. Przekierowuje do panelu...", "result--success");
+        setResult("Sesja aktywna. Przekierowuję do panelu...", "result--success");
         window.location.href = "/static/panel.html";
     } else {
-        setResult("Zaloguj sie, aby kontynuowac.", null);
+        setResult("Zaloguj się, aby kontynuowac.", null);
     }
 };
 
-autoLogin();
+autoLogin().catch(() => setResult("Brak połączenia z serwerem. Spróbuj ponownie.", "result--error"));

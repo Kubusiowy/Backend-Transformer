@@ -19,7 +19,8 @@ class RegisterService(
 
         if(req.email.isBlank()) throw BadRequest("Please enter a valid email")
         if(!req.email.contains("@")) throw BadRequest("Please enter a valid email")
-        if(req.rawPassword.length < 6) throw BadRequest("Please enter Stronger password")
+        if(req.email.trim().length > 255) throw BadRequest("Email is too long")
+        if(req.rawPassword.length < 8 || req.rawPassword.toByteArray().size > 72) throw BadRequest("Password must have at least 8 characters and at most 72 UTF-8 bytes")
 
         val normalizedEmail = req.email.trim().lowercase()
 

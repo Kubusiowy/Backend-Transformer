@@ -134,7 +134,7 @@ const renderUsers = () => {
         const passwordBtn = document.createElement("button");
         passwordBtn.type = "button";
         passwordBtn.className = "btn btn--ghost btn--small";
-        passwordBtn.textContent = "Zmien haslo";
+        passwordBtn.textContent = "Zmien hasło";
         passwordBtn.addEventListener("click", () => {
             if (adminPasswordForm) {
                 const input = adminPasswordForm.querySelector("input[name=userId]");
@@ -148,13 +148,13 @@ const renderUsers = () => {
         const removeDataBtn = document.createElement("button");
         removeDataBtn.type = "button";
         removeDataBtn.className = "btn btn--ghost btn--small";
-        removeDataBtn.textContent = "Usun transformatory";
+        removeDataBtn.textContent = "Usuń transformatory";
         removeDataBtn.addEventListener("click", () => deleteUserTransformers(user.id));
 
         const deleteUserBtn = document.createElement("button");
         deleteUserBtn.type = "button";
         deleteUserBtn.className = "btn btn--ghost btn--small";
-        deleteUserBtn.textContent = "Usun uzytkownika";
+        deleteUserBtn.textContent = "Usuń użytkownika";
         deleteUserBtn.addEventListener("click", () => deleteUser(user.id));
 
         actions.append(selectBtn, passwordBtn, removeDataBtn, deleteUserBtn);
@@ -231,16 +231,16 @@ const deleteUserTransformers = async (userId) => {
     if (!window.BT_API?.request) {
         return;
     }
-    setNotice("Usuwanie danych uzytkownika...");
+    setNotice("Usuwanie danych użytkownika...");
     try {
         await window.BT_API.request("DELETE", `/admin/users/${userId}/transformers`);
         await refreshAll();
         if (selectedUser && selectedUser.id === userId) {
             await selectUser(selectedUser);
         }
-        setNotice("Transformatory uzytkownika usuniete.");
+        setNotice("Transformatory użytkownika usuniete.");
     } catch (error) {
-        setNotice(error?.message || "Blad usuwania danych.");
+        setNotice(error?.message || "Błąd usuwania danych.");
     }
 };
 
@@ -248,13 +248,13 @@ const deleteUser = async (userId) => {
     if (!window.BT_API?.request) {
         return;
     }
-    setNotice("Usuwanie uzytkownika...");
+    setNotice("Usuwanie użytkownika...");
     try {
         await window.BT_API.request("DELETE", `/admin/users/${userId}`);
         await refreshAll();
         setNotice("Uzytkownik usuniety.");
     } catch (error) {
-        setNotice(error?.message || "Blad usuwania uzytkownika.");
+        setNotice(error?.message || "Błąd usuwania użytkownika.");
     }
 };
 
@@ -353,7 +353,7 @@ const renderTransformers = () => {
         return;
     }
     if (!userTransformers.length) {
-        adminTransformerEmpty.textContent = "Brak transformatorow dla wybranego uzytkownika.";
+        adminTransformerEmpty.textContent = "Brak transformatorów dla wybranego użytkownika.";
         adminTransformerEmpty.style.display = "block";
         adminTransformerList.style.display = "none";
         return;
@@ -484,7 +484,7 @@ const loadMetricKeys = async () => {
             setMetricsStatus("Brak kluczy metryk");
         }
     } catch (error) {
-        setMetricsStatus("Blad pobierania kluczy");
+        setMetricsStatus("Błąd pobierania kluczy");
     }
 };
 
@@ -511,7 +511,7 @@ const loadMetrics = async () => {
         updateMetricsSummary(currentMetricPoints[0] || null);
         setMetricsStatus("Dane zaktualizowane");
     } catch (error) {
-        setMetricsStatus("Blad pobierania danych");
+        setMetricsStatus("Błąd pobierania danych");
     }
 };
 
@@ -540,8 +540,8 @@ const applyUserSearch = () => {
 if (!isAdmin) {
     setNotice("Brak uprawnien administracyjnych.");
 } else {
-    setNotice("Masz dostep administracyjny. Mozesz zarzadzac wszystkimi danymi.");
-    refreshAll().catch(() => setNotice("Blad pobierania danych."));
+    setNotice("Masz dostęp administracyjny. Możesz zarzadzac wszystkimi danymi.");
+    refreshAll().catch(() => setNotice("Błąd pobierania danych."));
 }
 
 if (adminSeedBtn) {
@@ -567,18 +567,18 @@ if (adminPasswordForm) {
         const userId = String(formData.get("userId") || "").trim();
         const password = String(formData.get("password") || "").trim();
         if (!userId || !password) {
-            setPasswordResult("Uzupelnij pola ID i haslo.", "result--error");
+            setPasswordResult("Uzupełnij pola ID i hasło.", "result--error");
             return;
         }
-        setPasswordResult("Zmieniam haslo...", null);
+        setPasswordResult("Zmieniam hasło...", null);
         try {
             await window.BT_API.request("PUT", `/admin/users/${userId}/password`, {
                 newPassword: password
             });
-            setPasswordResult("Haslo zmienione.", "result--success");
+            setPasswordResult("Hasło zmienione.", "result--success");
             adminPasswordForm.reset();
         } catch (error) {
-            setPasswordResult(error?.message || "Blad zmiany hasla.", "result--error");
+            setPasswordResult(error?.message || "Błąd zmiany hasła.", "result--error");
         }
     });
 }

@@ -35,6 +35,8 @@ Refresh:
 Notes:
 - On 401: refresh token, retry once.
 - Store refresh token securely.
+- POST /auth/logout with { "refreshToken": "..." } revokes that refresh session.
+- After the October 2026 update, log in again: old JWTs and refresh hashes are invalid.
 
 
 2) Transformers
@@ -152,7 +154,8 @@ Response:
   {
     "transformerId": "uuid",
     "key": "string",
-    "bucketTs": "yyyy-MM-ddTHH:mm:ss",
+    "bucketTs": "yyyy-MM-ddTHH:mm:ssZ",
+    "lastValue": 123.45,
     "avgValue": 123.45,
     "minValue": 120.1,
     "maxValue": 130.2,
@@ -168,7 +171,46 @@ Response:
 Connect:
   ws://<host>/ws/transformers/{transformerId}/metrics?token=<JWT>
 
+Prefer wss:// in production. Devices can use the Authorization: Bearer header
+instead of putting the token in the URL. Browsers connect without query tokens
+and send { "type": "auth", "token": "ACCESS_TOKEN" } within 5 seconds.
+
+On authentication the server sends { "type": "ready" }. Invalid metric frames
+return { "type": "error", "message": "..." }; ignore these control messages
+when parsing metric points. Send one JSON metric per text frame:
+  { "key": "register name", "value": 230.5, "unit": "V", "timestamp": "2026-10-10T12:00:00Z" }
+
+Keys and labels are limited to 64 characters, units to 16, frames to 64 KiB.
+Values must be finite. A missing timestamp uses UTC now; invalid timestamps
+are rejected. The panel matches keys to register names, so use unique register
+names within a transformer. HTTP metric writes are also broadcast.
+
+Refresh expired tokens and reconnect with exponential backoff. Access removal
+or expiry closes the socket with 1008, slow receivers with 1013. Re-fetch recent
+history after reconnect: this connection does not provide durable delivery.
+Each metric is a replacement aggregate for its key and UTC minute (bucketTs),
+not an extra historical point. Sending the same sample twice counts it twice.
+
 Server broadcasts MetricPointResponse items (same shape as HTTP metrics response items).
+
+Individual reading history for line charts:
+GET /transformers/{transformerId}/metrics?key=...&resolution=samples&order=desc&limit=120
+The chart loads all history in pages and retains the first reading during live updates.
+To fetch the next older page, use order=desc and pass before=<last item's timestamp,
+or bucketTs for a legacy aggregate> and beforeSequence=<number after # in sampleId,
+or 0 for an aggregate>. This exclusive cursor preserves samples sharing a timestamp.
+Continue until a page contains fewer than limit items.
+Each new reading is persisted separately with timestamp (UTC, milliseconds) and
+sampleId (unique within the transformer and metric key). The chart sorts timestamp
+from oldest to newest. Requests without resolution=samples still return minute
+aggregates. HTTP ingest responses and WebSocket broadcasts retain their aggregate
+fields and additionally include timestamp and sampleId for the incoming reading;
+use lastValue as that reading's value, not the aggregate min/max/average.
+Old history without individual samples remains available as minute aggregates
+(no sampleId or timestamp). It cannot be reconstructed into individual readings.
+The application creates the metric_samples table at startup. New samples are
+stored in the same transaction as the minute aggregate and removed with their
+transformer. Storage grows by one row per received reading.
 
 
 7) Transformer errors

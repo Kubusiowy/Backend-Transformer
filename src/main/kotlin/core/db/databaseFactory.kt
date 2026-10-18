@@ -5,6 +5,7 @@ import com.example.core.db.exposedTables.DeviceApiKeys
 import com.example.core.db.exposedTables.Meter
 import com.example.core.db.exposedTables.MeterRegister
 import com.example.core.db.exposedTables.Metrics1mKv
+import com.example.core.db.exposedTables.MetricSamples
 import com.example.core.db.exposedTables.RefreshSessions
 import com.example.core.db.exposedTables.TransformerErrors
 import com.example.core.db.exposedTables.Transformers
@@ -25,22 +26,20 @@ object DatabaseFactory: KoinComponent {
     private val loadCfg: DBParameters by inject()
 
 
-    fun init(){
+    fun init(testJdbcUrl: String? = null){
         val config = HikariConfig().apply{
-            jdbcUrl = "jdbc:mysql://${loadCfg.dbHost}:${loadCfg.dbPort}/${loadCfg.databaseName}"
-            driverClassName = "com.mysql.cj.jdbc.Driver"
-            username = loadCfg.user
-            password = loadCfg.password
+            jdbcUrl = testJdbcUrl ?: "jdbc:mysql://${loadCfg.dbHost}:${loadCfg.dbPort}/${loadCfg.databaseName}?connectTimeout=5000&socketTimeout=30000"
+            driverClassName = if (testJdbcUrl != null) "org.h2.Driver" else "com.mysql.cj.jdbc.Driver"
+            username = if (testJdbcUrl != null) "sa" else loadCfg.user
+            password = if (testJdbcUrl != null) "" else loadCfg.password
             maximumPoolSize = 15
             isAutoCommit = false
             transactionIsolation = "TRANSACTION_REPEATABLE_READ"
+            connectionTimeout = 10000
+            validationTimeout = 5000
             validate()
         }
 
-        println("JDBC URL = ${loadCfg.dbHost}")
-        println("Database = ${loadCfg.databaseName}")
-        println("DB USER = ${loadCfg.user}")
-        println("DB PASSWORD = ${loadCfg.password}")
 
 
 
@@ -55,10 +54,15 @@ object DatabaseFactory: KoinComponent {
                 Meter,
                 MeterRegister,
                 Metrics1mKv,
+                MetricSamples,
                 DeviceApiKeys
             )
         }
 
+    }
+
+    fun close() {
+        if (::dataSource.isInitialized) dataSource.close()
     }
 
 

@@ -1,29 +1,29 @@
 package com.example.features.IOT.metrics.route
 
-import io.ktor.server.websocket.DefaultWebSocketServerSession
-import io.ktor.websocket.send
+import kotlinx.coroutines.channels.Channel
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 object MetricsWsHub {
-    private val sessions = ConcurrentHashMap<UUID, MutableSet<DefaultWebSocketServerSession>>()
-
-    fun add(transformerId: UUID, session: DefaultWebSocketServerSession) {
-        val set = sessions.computeIfAbsent(transformerId) { ConcurrentHashMap.newKeySet() }
-        set.add(session)
-    }
-
-    fun remove(transformerId: UUID, session: DefaultWebSocketServerSession) {
-        sessions[transformerId]?.remove(session)
-        if (sessions[transformerId]?.isEmpty() == true) {
-            sessions.remove(transformerId)
+    private val subscribers = ConcurrentHashMap<UUID, MutableSet<Channel<String>>>()
+    fun add(transformerId: UUID): Channel<String> {
+        val queue = Channel<String>(64)
+        subscribers.compute(transformerId) { _, existing ->
+            (existing ?: ConcurrentHashMap.newKeySet()).also { it.add(queue) }
         }
+        return queue
     }
-
-    suspend fun broadcast(transformerId: UUID, payload: String) {
-        val snapshot = sessions[transformerId]?.toList() ?: return
-        for (session in snapshot) {
-            runCatching { session.send(payload) }
+    fun remove(transformerId: UUID, queue: Channel<String>) {
+        subscribers.computeIfPresent(transformerId) { _, set ->
+            set.remove(queue)
+            set.takeIf { it.isNotEmpty() }
+        }
+        queue.close()
+    }
+    fun broadcast(transformerId: UUID, payload: String) {
+        // Slow subscribers cannot block ingestion or other subscribers.
+        subscribers[transformerId]?.forEach { queue ->
+            if (queue.trySend(payload).isFailure) remove(transformerId, queue)
         }
     }
 }

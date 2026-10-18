@@ -16,6 +16,7 @@ const setResult = (message, state) => {
         return;
     }
     transformerResultBody.textContent = message;
+    transformerResult.hidden = !message;
     transformerResult.classList.remove("result--success", "result--error");
     if (state) {
         transformerResult.classList.add(state);
@@ -47,6 +48,7 @@ const renderTransformers = () => {
         return;
     }
     transformerList.innerHTML = "";
+    document.getElementById("transformerNext").hidden = !getSelectedId();
 
     if (!transformers.length) {
         transformerEmpty.style.display = "block";
@@ -86,18 +88,6 @@ const renderTransformers = () => {
         meterTag.textContent = `Mierniki: ${typeof count === "number" ? count : "..."}`;
         tags.append(meterTag);
 
-        const idTag = document.createElement("span");
-        idTag.className = "tag";
-        idTag.textContent = transformer.id;
-        tags.append(idTag);
-
-        if (isAdmin) {
-            const ownerTag = document.createElement("span");
-            ownerTag.className = "tag";
-            ownerTag.textContent = transformer.userId || "brak ownera";
-            tags.append(ownerTag);
-        }
-
         main.append(name, meta, tags);
 
         const actions = document.createElement("div");
@@ -106,7 +96,8 @@ const renderTransformers = () => {
         const selectBtn = document.createElement("button");
         selectBtn.type = "button";
         selectBtn.className = "btn btn--ghost btn--small";
-        selectBtn.textContent = "Wybierz";
+        selectBtn.textContent = transformer.id === selectedId ? "Wybrany" : "Wybierz";
+        selectBtn.setAttribute("aria-pressed", String(transformer.id === selectedId));
         selectBtn.addEventListener("click", () => {
             setSelectedId(transformer.id);
             renderTransformers();
@@ -115,7 +106,7 @@ const renderTransformers = () => {
         const deleteBtn = document.createElement("button");
         deleteBtn.type = "button";
         deleteBtn.className = "btn btn--ghost btn--small";
-        deleteBtn.textContent = "Usun";
+        deleteBtn.textContent = "Usuń";
         deleteBtn.addEventListener("click", () => removeTransformer(transformer.id));
 
         actions.append(selectBtn, deleteBtn);
@@ -155,9 +146,9 @@ const fetchTransformers = async () => {
         ensureSelectedVisible();
         renderTransformers();
         loadMeterCounts();
-        setResult("Lista transformatorow zaktualizowana.", "result--success");
+        setResult("", null);
     } catch (error) {
-        setResult(error?.message || "Blad pobierania danych.", "result--error");
+        setResult(error?.message || "Błąd pobierania danych.", "result--error");
     }
 };
 
@@ -175,9 +166,10 @@ const addTransformer = async (payload) => {
         }
         renderTransformers();
         loadMeterCounts();
-        setResult("Transformator dodany.", "result--success");
+        setResult("Dodano. Przejdź do miernika.", "result--success");
+        addForm.reset();
     } catch (error) {
-        setResult(error?.message || "Blad zapisu.", "result--error");
+        setResult(error?.message || "Błąd zapisu.", "result--error");
     }
 };
 
@@ -195,9 +187,9 @@ const removeTransformer = async (id) => {
         }
         renderTransformers();
         loadMeterCounts();
-        setResult("Transformator usuniety.", "result--success");
+        setResult("Transformator usunięty.", "result--success");
     } catch (error) {
-        setResult(error?.message || "Blad usuwania.", "result--error");
+        setResult(error?.message || "Błąd usuwania.", "result--error");
     }
 };
 
@@ -214,7 +206,6 @@ if (addForm) {
         }
 
         addTransformer({ name, location: location || null });
-        addForm.reset();
     });
 }
 

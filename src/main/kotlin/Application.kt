@@ -1,6 +1,7 @@
 package com.example
 
 import com.example.core.db.DatabaseFactory
+import com.example.core.config.dotenv
 import com.example.core.model.user.Role.UserRole
 import com.example.core.model.user.User
 import com.example.core.util.passHash.Hasher
@@ -26,6 +27,7 @@ fun main(args: Array<String>) {
 fun Application.module() {
     configureFrameworks()
     DatabaseFactory.init()
+    monitor.subscribe(ApplicationStopped) { DatabaseFactory.close() }
     ensureDefaultAdmin()
     configureHTTP()
     configureWebSockets()
@@ -41,13 +43,16 @@ private fun Application.ensureDefaultAdmin() {
     val hasher by inject<Hasher>()
 
     runBlocking {
-        val email = "admin@admin"
-        val rawPassword = "ZAQ!2wsx"
+        val email = (System.getenv("BOOTSTRAP_ADMIN_EMAIL") ?: dotenv.get("BOOTSTRAP_ADMIN_EMAIL"))
+            ?.trim()?.lowercase() ?: return@runBlocking
+        val rawPassword = System.getenv("BOOTSTRAP_ADMIN_PASSWORD") ?: dotenv.get("BOOTSTRAP_ADMIN_PASSWORD")
+            ?: error("BOOTSTRAP_ADMIN_PASSWORD is required when BOOTSTRAP_ADMIN_EMAIL is set")
+        require(rawPassword.length >= 8 && rawPassword.toByteArray().size <= 72) { "Invalid bootstrap password length" }
         val existingUser = authRepository.findByEmail(email)
+        if (existingUser != null) return@runBlocking
         val passwordHash = hasher.hash(rawPassword)
 
-        if (existingUser == null) {
-            authRepository.addUser(
+        authRepository.addUser(
                 User(
                     id = UUID.randomUUID(),
                     email = email,
@@ -55,24 +60,7 @@ private fun Application.ensureDefaultAdmin() {
                     role = UserRole.ADMIN
                 )
             )
-            println("Created default admin account: $email")
-            return@runBlocking
-        }
+        log.info("Created bootstrap administrator")
 
-        var updated = false
-
-        if (existingUser.role != UserRole.ADMIN) {
-            authRepository.updateRole(existingUser.id, UserRole.ADMIN)
-            updated = true
-        }
-
-        if (!hasher.verify(rawPassword, existingUser.passwordHash)) {
-            authRepository.updatePasswordHash(existingUser.id, passwordHash)
-            updated = true
-        }
-
-        if (updated) {
-            println("Updated default admin account: $email")
-        }
     }
 }

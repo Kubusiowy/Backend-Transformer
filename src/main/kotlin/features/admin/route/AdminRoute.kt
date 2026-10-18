@@ -70,7 +70,7 @@ fun Route.adminRoute() {
             val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                 ?: throw BadRequest("Invalid user id")
             authRepo.findById(id) ?: throw NotFound("User not found")
-            transformerRepo.deleteByUser(id)
+            if (id == principal.subject) throw BadRequest("Cannot delete your own administrator account")
             authRepo.deleteById(id)
             call.respond(HttpStatusCode.NoContent)
         }
@@ -84,7 +84,7 @@ fun Route.adminRoute() {
                 ?: throw BadRequest("Invalid user id")
             authRepo.findById(id) ?: throw NotFound("User not found")
             val req = call.receive<ChangePasswordRequest>()
-            if (req.newPassword.length < 6) {
+            if (req.newPassword.length < 8 || req.newPassword.toByteArray().size > 72) {
                 throw BadRequest("Password too short")
             }
             val hash = hasher.hash(req.newPassword)
@@ -101,6 +101,7 @@ fun Route.adminRoute() {
                 ?: throw BadRequest("Invalid user id")
             authRepo.findById(id) ?: throw NotFound("User not found")
             val req = call.receive<ChangeRoleRequest>()
+            if (id == principal.subject && req.role != UserRole.ADMIN) throw BadRequest("Cannot remove your own administrator role")
             authRepo.updateRole(id, req.role)
             call.respond(HttpStatusCode.OK)
         }

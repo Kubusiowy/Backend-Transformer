@@ -48,6 +48,12 @@ class TransformerErrorRepository {
         message: String,
         status: TransformerErrorStatus,
     ): TransformerErrorRecord = dbQuery {
+        if (code.isBlank() || code.length > 64 || message.isBlank() || message.length > 255) {
+            throw com.example.plugins.StatusPage.errors.BadRequest("Invalid error code or message length")
+        }
+        com.example.core.db.exposedTables.Transformers.selectAll().where {
+            com.example.core.db.exposedTables.Transformers.id eq transformerId.toString()
+        }.forUpdate().firstOrNull() ?: throw com.example.plugins.StatusPage.errors.NotFound("Transformer not found")
         val now = Instant.now()
         val newId = TransformerErrors.insert { row ->
             row[TransformerErrors.transformerId] = transformerId.toString()

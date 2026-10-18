@@ -1,129 +1,116 @@
 package com.example.features.IOT.metrics.route
 
 import com.example.core.model.user.Role.UserRole
-import com.example.core.model.user.jwt.UserPrincipal
+import com.example.features.auth.common.AuthRepository
 import com.example.features.IOT.metrics.data.MetricsRepository
+import com.example.features.IOT.metrics.domain.metricTimestamp
 import com.example.features.IOT.metrics.domain.DTO.request.MetricIngestRequest
-import com.example.features.IOT.metrics.domain.DTO.response.MetricPointResponse
 import com.example.features.IOT.transformer.data.TransformerRepository
 import com.example.plugins.Security.JwtService
+import com.example.plugins.StatusPage.exception.ApiError
 import io.ktor.server.application.log
 import io.ktor.server.routing.Route
 import io.ktor.server.websocket.webSocket
-import io.ktor.websocket.Frame
-import io.ktor.websocket.CloseReason
-import io.ktor.websocket.close
-import io.ktor.websocket.readText
-import kotlinx.serialization.json.Json
+import io.ktor.websocket.*
+import kotlinx.coroutines.*
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.*
 import org.koin.ktor.ext.inject
-import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.ZoneOffset
 import java.util.UUID
 
-private val metricsJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-}
+private val metricsJson = Json { ignoreUnknownKeys = true }
 
 fun Route.metricsWsRoute() {
     val metricsRepo: MetricsRepository by inject()
     val transformerRepo: TransformerRepository by inject()
+    val authRepo: AuthRepository by inject()
     val jwtService: JwtService by inject()
 
-    fun parsePrincipal(token: String?): UserPrincipal? {
-        if (token.isNullOrBlank()) {
-            return null
-        }
-        val cleaned = token.removePrefix("Bearer ").trim()
-        val decoded = runCatching { jwtService.verifier().verify(cleaned) }.getOrNull() ?: return null
-        val subject = decoded.subject?.let { runCatching { UUID.fromString(it) }.getOrNull() } ?: return null
-        val roleValue = decoded.getClaim("role")?.asString()?.uppercase() ?: return null
-        val role = runCatching { UserRole.valueOf(roleValue) }.getOrNull() ?: return null
-        return UserPrincipal(subject, role)
-    }
-
-    fun parseTimestamp(value: String?): LocalDateTime {
-        if (value.isNullOrBlank()) {
-            return LocalDateTime.now(ZoneOffset.UTC)
-        }
-        val offset = runCatching { OffsetDateTime.parse(value) }.getOrNull()
-        if (offset != null) {
-            return offset.withOffsetSameInstant(ZoneOffset.UTC).toLocalDateTime()
-        }
-        return runCatching { LocalDateTime.parse(value) }.getOrElse { LocalDateTime.now(ZoneOffset.UTC) }
-    }
-
     webSocket("/ws/transformers/{transformerId}/metrics") {
-        val transformerId = call.parameters["transformerId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+        val transformerId = runCatching { UUID.fromString(call.parameters["transformerId"]) }.getOrNull()
         if (transformerId == null) {
             close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "Invalid transformer id"))
             return@webSocket
         }
-
-        val token = call.request.queryParameters["token"]
-            ?: call.request.headers["Authorization"]
-        val principal = parsePrincipal(token)
-        if (principal == null) {
-            close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Unauthorized"))
-            return@webSocket
-        }
-
-        val transformer = transformerRepo.findById(transformerId)
-        if (transformer == null) {
-            close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "Transformer not found"))
-            return@webSocket
-        }
-        if (principal.role != UserRole.ADMIN && transformer.userId != principal.subject) {
-            close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Forbidden"))
-            return@webSocket
-        }
-
-        MetricsWsHub.add(transformerId, this)
-
+        var queue: kotlinx.coroutines.channels.Channel<String>? = null
+        var writer: Job? = null
+        var authorizationCheck: Job? = null
         try {
-            for (frame in incoming) {
-                if (frame !is Frame.Text) {
-                    continue
+            // Headers for devices, first-frame authentication for browsers.
+            // Query tokens remain supported for existing device clients.
+            val token = call.request.headers["Authorization"]?.removePrefix("Bearer ")
+                ?: call.request.queryParameters["token"]
+                ?: withTimeoutOrNull(5000) {
+                    val frame = incoming.receive() as? Frame.Text ?: return@withTimeoutOrNull null
+                    runCatching {
+                        metricsJson.parseToJsonElement(frame.readText()).jsonObject["token"]?.jsonPrimitive?.content
+                    }.getOrNull()
                 }
-                val text = frame.readText()
-                val request = runCatching { metricsJson.decodeFromString(MetricIngestRequest.serializer(), text) }.getOrNull()
-                    ?: continue
-                if (request.key.isBlank()) {
-                    continue
-                }
-
-                call.application.log.info(
-                    "WS metrics ingest transformerId=$transformerId key=${request.key} value=${request.value} unit=${request.unit ?: "-"} timestamp=${request.timestamp ?: "now"}"
-                )
-
-                val timestamp = parseTimestamp(request.timestamp)
-                val bucketTs = timestamp.withSecond(0).withNano(0)
-                val record = metricsRepo.upsertValue(
-                    transformerId = transformerId,
-                    key = request.key.trim(),
-                    bucketTs = bucketTs,
-                    value = request.value,
-                    unit = request.unit,
-                    label = request.label,
-                )
-                val payload = MetricPointResponse(
-                    transformerId = record.transformerId.toString(),
-                    key = record.key,
-                    bucketTs = record.bucketTs.toString(),
-                    lastValue = record.lastValue,
-                    avgValue = record.avgValue,
-                    minValue = record.minValue,
-                    maxValue = record.maxValue,
-                    count = record.count,
-                    unit = record.unit,
-                    label = record.label,
-                )
-                val encoded = metricsJson.encodeToString(MetricPointResponse.serializer(), payload)
-                MetricsWsHub.broadcast(transformerId, encoded)
+            val decoded = runCatching { jwtService.verifier().verify(token.orEmpty()) }.getOrNull()
+            val userId = runCatching { UUID.fromString(decoded?.subject) }.getOrNull()
+            if (userId == null || decoded?.getClaim("type")?.asString() != "access" || decoded.expiresAt == null) {
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Unauthorized"))
+                return@webSocket
             }
+            suspend fun allowed(): Boolean {
+                if (decoded.expiresAt.time <= System.currentTimeMillis()) return false
+                val user = authRepo.findById(userId) ?: return false
+                val transformer = transformerRepo.findById(transformerId) ?: return false
+                return user.role == UserRole.ADMIN || transformer.userId == user.id
+            }
+            if (!allowed()) {
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Forbidden"))
+                return@webSocket
+            }
+            val outgoingQueue = MetricsWsHub.add(transformerId)
+            queue = outgoingQueue
+            writer = launch {
+                try {
+                    for (payload in outgoingQueue) withTimeout(5000) { send(payload) }
+                } catch (_: TimeoutCancellationException) {
+                    // Close the socket as well as its writer when the client stops reading.
+                }
+                close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "Slow consumer; reconnect"))
+            }
+            authorizationCheck = launch {
+                while (isActive) {
+                    delay(minOf(30000L, (decoded.expiresAt.time - System.currentTimeMillis()).coerceAtLeast(1)))
+                    if (!allowed()) {
+                        close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Session expired or access revoked"))
+                        break
+                    }
+                }
+            }
+            send("""{"type":"ready"}""")
+            for (frame in incoming) {
+                if (frame !is Frame.Text) continue
+                if (!allowed()) {
+                    close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Session expired or access revoked"))
+                    break
+                }
+                try {
+                    val request = metricsJson.decodeFromString<MetricIngestRequest>(frame.readText())
+                    val timestamp = metricTimestamp(request.timestamp)
+                    val record = metricsRepo.upsertValue(
+                        transformerId, request.key.trim(), timestamp.withSecond(0).withNano(0),
+                        request.value, request.unit, request.label, timestamp
+                    )
+                    MetricsWsHub.broadcast(transformerId, metricsJson.encodeToString(record.toResponse()))
+                } catch (_: SerializationException) {
+                    send("""{"type":"error","message":"Invalid metric JSON"}""")
+                } catch (e: ApiError) {
+                    send(buildJsonObject { put("type", "error"); put("message", e.message) }.toString())
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            call.application.log.error("Metrics WebSocket failed for {}", transformerId, e)
+            close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "Connection failed; reconnect"))
         } finally {
-            MetricsWsHub.remove(transformerId, this)
+            queue?.let { MetricsWsHub.remove(transformerId, it) }
+            writer?.cancel()
+            authorizationCheck?.cancel()
         }
     }
 }

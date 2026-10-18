@@ -15,6 +15,18 @@ application {
     mainClass = "io.ktor.server.netty.EngineMain"
 }
 
+ktor {
+    fatJar { archiveFileName.set("app-all.jar") }
+}
+
+tasks.register<JavaExec>("previewIsolated") {
+    description = "Run the panel on 127.0.0.1:8087 using an isolated in-memory database."
+    group = "verification"
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("com.example.LocalPreviewKt")
+}
+
 dependencies {
     implementation("io.ktor:ktor-server-cors")
     implementation("io.ktor:ktor-server-core")

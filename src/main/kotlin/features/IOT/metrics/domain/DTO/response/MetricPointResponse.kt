@@ -14,4 +14,6 @@ data class MetricPointResponse(
     val count: Int,
     val unit: String? = null,
     val label: String? = null,
+    val sampleId: String? = null,
+    val timestamp: String? = null,
 )

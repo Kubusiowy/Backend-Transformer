@@ -6,6 +6,7 @@ import com.example.core.config.loadConfigJWT
 import com.example.core.model.user.Role.UserRole
 import com.example.core.model.user.jwt.UserPrincipal
 import com.example.plugins.Security.JwtService
+import com.example.features.auth.common.AuthRepository
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
@@ -17,8 +18,9 @@ import java.util.UUID
 fun Application.configureSecurity() {
 
     val jwtService by inject<JwtService>()
+    val authRepo by inject<AuthRepository>()
 
-    val jwtConfig = loadConfigJWT()
+    val jwtConfig by inject<com.example.core.config.JwtConfig>()
 
     authentication {
         jwt("auth-jwt") {
@@ -27,6 +29,7 @@ fun Application.configureSecurity() {
             verifier(jwtService.verifier())
 
             validate { credential ->
+                if (credential.payload.getClaim("type").asString() != "access") return@validate null
                 val subjectValue = credential.payload.subject
                 if (subjectValue.isNullOrBlank()) return@validate null
                 val subject = runCatching { UUID.fromString(subjectValue)}.getOrNull() ?: return@validate null
@@ -36,7 +39,8 @@ fun Application.configureSecurity() {
                 val role = runCatching { UserRole.valueOf(roleValue) }.getOrNull()
                     ?: return@validate null
 
-                UserPrincipal(subject, role)
+                val user = authRepo.findById(subject) ?: return@validate null
+                UserPrincipal(subject, user.role)
             }
         }
     }

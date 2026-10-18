@@ -15,6 +15,9 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
 import java.time.Instant
 import java.util.UUID
+import com.example.core.db.exposedTables.Transformers
+import com.example.plugins.StatusPage.errors.BadRequest
+import com.example.plugins.StatusPage.errors.NotFound
 
 class MeterRepository {
 
@@ -100,6 +103,9 @@ class MeterRepository {
         byteOrder: ByteOrder,
         pollIntervalMs: Int,
     ): MeterRecord = dbQuery {
+        validateMeter(name, deviceCode, serialPort, baudRate, dataBits, stopBits, slaveId, pollIntervalMs)
+        Transformers.selectAll().where { Transformers.id eq transformerId.toString() }.forUpdate()
+            .firstOrNull() ?: throw NotFound("Transformer not found")
         val now = Instant.now()
         val newId = Meter.insert { row ->
             row[Meter.transformerId] = transformerId.toString()
@@ -121,6 +127,7 @@ class MeterRepository {
     }
 
     suspend fun update(id: Long, updated: MeterRecord): Boolean = dbQuery {
+        with(updated) { validateMeter(name, deviceCode, serialPort, baudRate, dataBits, stopBits, slaveId, pollIntervalMs) }
         Meter.update({ Meter.id eq id }) { row ->
             row[Meter.updatedAt] = Instant.now()
             row[Meter.name] = updated.name
@@ -138,6 +145,8 @@ class MeterRepository {
     }
 
     suspend fun delete(id: Long): Boolean = dbQuery {
+        Meter.selectAll().where { Meter.id eq id }.forUpdate().firstOrNull() ?: return@dbQuery false
+        MeterRegister.deleteWhere { MeterRegister.meterId eq id }
         Meter.deleteWhere { Meter.id eq id } > 0
     }
 
@@ -161,6 +170,8 @@ class MeterRepository {
         enabled: Boolean,
         orderIndex: Int,
     ): RegisterRecord = dbQuery {
+        validateRegister(name, address, length, dataType, scale, unit, orderIndex)
+        Meter.selectAll().where { Meter.id eq meterId }.forUpdate().firstOrNull() ?: throw NotFound("Meter not found")
         val now = Instant.now()
         val newId = MeterRegister.insert { row ->
             row[MeterRegister.meterId] = meterId
@@ -179,6 +190,7 @@ class MeterRepository {
     }
 
     suspend fun updateRegister(id: Long, updated: RegisterRecord): Boolean = dbQuery {
+        with(updated) { validateRegister(name, address, length, dataType, scale, unit, orderIndex) }
         MeterRegister.update({ MeterRegister.id eq id }) { row ->
             row[MeterRegister.name] = updated.name
             row[MeterRegister.registerType] = updated.registerType
@@ -195,4 +207,15 @@ class MeterRepository {
     suspend fun deleteRegister(id: Long): Boolean = dbQuery {
         MeterRegister.deleteWhere { MeterRegister.id eq id } > 0
     }
+}
+
+private fun validateMeter(name: String, code: String, port: String, baud: Int, bits: Int, stop: Int, slave: Int, poll: Int) {
+    if (listOf(name, code, port).any { it.isBlank() || it.length > 64 }) throw BadRequest("Meter name, code and port must have 1–64 characters")
+    if (baud <= 0 || bits !in 5..8 || stop !in 1..2 || slave !in 1..247 || poll < 100) throw BadRequest("Invalid serial parameters or polling interval (minimum 100 ms)")
+}
+
+private fun validateRegister(name: String, address: Int, length: Int, type: RegisterDataType, scale: Double, unit: String?, order: Int) {
+    val expectedLength = if (type == RegisterDataType.INT16) 1 else 2
+    if (name.isBlank() || name.length > 64 || (unit?.length ?: 0) > 16) throw BadRequest("Invalid register name or unit length")
+    if (length != expectedLength || address !in 0..(65536 - length) || !scale.isFinite() || order < 0) throw BadRequest("Invalid register address, length, scale or order")
 }
